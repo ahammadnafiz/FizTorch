@@ -15,26 +15,26 @@ This is a toy implementation of a Tensor class, inspired by popular machine lear
 
 ### Basic Functionality
 1. **Implement Basic Operations** ✨
-   - [ ] Addition (`__add__`)
-   - [ ] Subtraction (`__sub__`)
-   - [ ] Multiplication (`__mul__`)
-   - [ ] Division (`__truediv__`)
+   - [x] Addition (`__add__`)
+   - [x] Subtraction (`__sub__`)
+   - [x] Multiplication (`__mul__`)
+   - [x] Division (`__truediv__`)
 2. **Implement Matrix Multiplication** 🔢
    - [ ] Create `matmul` method
 3. **Shape and Size Handling** 🔍
-   - [ ] Enhance the `shape` method for higher-dimensional tensors
+   - [x] Enhance the `shape` method for higher-dimensional tensors
 4. **Gradient Tracking** 🧠
    - [ ] Implement `backward` method for gradient accumulation
 5. **String Representation** 🔍
-   - [ ] Implement `__repr__` for better tensor visualization
+   - [x] Implement `__repr__` for better tensor visualization
 
 ### Intermediate Features
 6. **Support Higher-Dimensional Tensors** ⚙️
-   - [ ] Modify operations to handle tensors with more than two dimensions
+   - [x] Modify operations to handle tensors with more than two dimensions
 7. **Implement Advanced Operations** 🧠
-   - [ ] Element-wise power operation
+   - [x] Element-wise power operation
    - [ ] Reduction operations (sum, mean, max, min)
-   - [ ] Transpose method
+   - [x] Transpose method
 8. **Automatic Differentiation** 🧠
    - [ ] Develop a system to build a computational graph for backpropagation
 
