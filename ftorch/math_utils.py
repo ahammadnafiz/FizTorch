@@ -1,3 +1,4 @@
+import math
 import warnings
 from functools import reduce as _reduce
 from base import TensorBase
