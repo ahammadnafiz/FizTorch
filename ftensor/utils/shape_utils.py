@@ -1,5 +1,5 @@
 from functools import reduce as _reduce
-from base import TensorBase
+from ftensor.core.base import TensorBase
 
 class Shape:
     def get_shape(self, data):

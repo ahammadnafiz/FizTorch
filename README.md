@@ -37,6 +37,43 @@ Popular machine learning libraries like PyTorch and TensorFlow inspire this toy 
 
 - ⚠️ **Broadcasting Support**: Some broadcasting operations are not functioning as expected and require further debugging.
 
+```output
+Test 4: 3D + 1D
+FTensor result:
+FTensor(shape=(2, 2, 2), dtype=list)
+Data:
+[[11, 22] [13, 24]]
+[[15, 26] [17, 28]]
+NumPy result:
+[[[11 22]
+  [13 24]]
+
+ [[15 26]
+  [17 28]]]
+Test passed: Results match!
+
+Test 5: 4D + 3D
+FTensor result:
+FTensor(shape=(2, 2, 1, 1, 2), dtype=list)
+Data:
+[[[[11, 22]]] [[[15, 26]]]]
+[[[[11, 22]]] [[[15, 26]]]]
+NumPy result:
+[[[[11 22]
+   [13 24]]
+
+  [[31 42]
+   [33 44]]]
+
+
+ [[[15 26]
+   [17 28]]
+
+  [[35 46]
+   [37 48]]]]
+Test failed: Results do not match.
+```
+
 ### Future Additions and Features 🚀
 
 - 🔲 **Automatic Differentiation**: Implementing backpropagation for automatic gradient calculation.
