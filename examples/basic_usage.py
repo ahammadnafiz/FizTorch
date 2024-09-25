@@ -1,11 +1,7 @@
-import sys
-import os
-
-# Add the parent directory to the system path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
-from ftensor.core.ftensor import FTensor as ft
-
+import sys
+sys.path.append('../')
+from ftensor import FTensor as ft
 
 
 # Creating higher-dimensional tensors
