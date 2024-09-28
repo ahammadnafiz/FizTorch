@@ -1,173 +1,159 @@
 from __future__ import annotations
 
 from ..core.function import Function
-from ..core.tensor import Tensor, FTensor
+from ..core.tensor import Tensor
+from tensorops import max_broad, extend, broadcast
 import numpy as np
 
-class Add(Function):
-    @staticmethod
-    def forward(ctx, a, b):
-        ctx.save_for_backward(a, b)
-        return Tensor(np.add(a.data, b.data))
+class MATMUL(Function):
+    def forward(ctx, x1, x2):
+        return Tensor(np.matmul(x1.data, x2.data), requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output, grad_output
+    def backward(ctx, grad_out):
+        x1, x2 = ctx.parents
+        if x1.requires_grad:
+            x1.grad += grad_out.matmul(x2.transpose())
+        if x2.requires_grad:
+            x2.grad += x1.transpose().matmul(grad_out)
 
-class Mul(Function):
-    @staticmethod
-    def forward(ctx, a, b):
-        ctx.save_for_backward(a, b)
-        return Tensor(np.multiply(a.data, b.data))
+class SUM(Function):
+    def forward(ctx, x1, **kwargs):
+        if "axis" in kwargs:
+            _axis = kwargs['axis'] if isinstance(kwargs['axis'], tuple) else (kwargs['axis'],)
+            ctx.axis = tuple(d if d >= 0 else (len(x1.shape) - d) for d in _axis)
+        else:
+            ctx.axis = None
+        kwargs["keepdims"] = True
+        return Tensor(np.sum(x1.data, **kwargs), requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        a, b = ctx.saved_tensors
-        return grad_output * b.data, grad_output * a.data
+    def backward(ctx, grad_out):
+        if ctx.parents[0].requires_grad:
+            ctx.parents[0].grad += extend(grad_out, ctx.parents[0].shape, ctx.axis)
 
-class Sub(Function):
-    @staticmethod
-    def forward(ctx, a, b):
-        return Tensor(np.subtract(a.data, b.data))
+class ADD(Function):
+    def forward(ctx, x1, x2):
+        return Tensor(x1.data + x2.data, requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output, -grad_output
+    def backward(ctx, grad_out):
+        x1, x2 = ctx.parents
+        if x1.requires_grad:
+            x1.grad += broadcast(grad_out, x1.shape)
+        if x2.requires_grad:
+            x2.grad += broadcast(grad_out, x2.shape)
 
-class Div(Function):
-    @staticmethod
-    def forward(ctx, a, b):
-        ctx.save_for_backward(a, b)
-        return Tensor(np.divide(a.data, b.data))
+class MAX(Function):
+    def forward(ctx, x1, **kwargs):
+        tmp = np.max(x1.data, **kwargs)
+        ctx.max_idx = np.argmax(x1.data, **kwargs)
+        ctx.axis = kwargs.get("axis", None)
+        return Tensor(tmp, requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        a, b = ctx.saved_tensors
-        return grad_output / b.data, -grad_output * a.data / (b.data ** 2)
+    def backward(ctx, grad_out):
+        if ctx.parents[0].requires_grad:
+            ctx.parents[0].grad += max_broad(ctx.max_idx, grad_out, ctx.axis, ctx.parents[0].shape)
 
-class Sum(Function):
-    @staticmethod
-    def forward(ctx, input, axis=None):
-        ctx.axis = axis
-        ctx.input_shape = input.shape
-        return Tensor(np.sum(input.data, axis=axis))
+class EXP(Function):
+    def forward(ctx, x1):
+        ret = Tensor(np.exp(x1.data), requires_grad=ctx.requires_grad, ctx=ctx)
+        ctx.outs.append(ret)
+        return ret
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return np.broadcast_to(grad_output, ctx.input_shape)
+    def backward(ctx, grad_out):
+        if ctx.parents[0].requires_grad:
+            ctx.parents[0].grad += grad_out * ctx.outs[0]
 
-class Mean(Function):
-    @staticmethod
-    def forward(ctx, input, axis=None):
-        ctx.axis = axis
-        ctx.input_shape = input.shape
-        return Tensor(np.mean(input.data, axis=axis))
+class SUB(Function):
+    def forward(ctx, x1, x2):
+        return Tensor(x1.data - x2.data, requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        output_shape = grad_output.shape
-        scale = np.prod(ctx.input_shape) / np.prod(output_shape)
-        return np.broadcast_to(grad_output, ctx.input_shape) / scale
+    def backward(ctx, grad_out):
+        x1, x2 = ctx.parents
+        if x1.requires_grad:
+            x1.grad += broadcast(grad_out, x1.shape)
+        if x2.requires_grad:
+            x2.grad += broadcast(-1 * grad_out, x2.shape)
 
-class Dot(Function):
-    @staticmethod
-    def forward(ctx, a, b):
-        if a.shape[1] != b.shape[0]:
-            raise ValueError(f"Incompatible shapes for dot product: {a.shape} and {b.shape}")
-        return np.dot(a.data, b.data)
+class MUL(Function):
+    def forward(ctx, x1, x2):
+        return Tensor(x1.data * x2.data, requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        a, b = ctx.saved_tensors
-        return np.dot(grad_output, b.data.T), np.dot(a.data.T, grad_output)
+    def backward(ctx, grad_out):
+        x1, x2 = ctx.parents
+        if x1.requires_grad:
+            x1.grad += broadcast(grad_out * x2, x1.shape)
+        if x2.requires_grad:
+            x2.grad += broadcast(grad_out * x1, x2.shape)
 
-class Transpose(Function):
-    @staticmethod
-    def forward(ctx, input):
-        return Tensor(np.transpose(input.data))
+class RELU(Function):
+    def forward(ctx, x1):
+        ctx.outs.append(x1.data > 0)
+        return Tensor(x1.data * (x1.data > 0), requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return np.transpose(grad_output)
+    def backward(ctx, grad_out):
+        idx, x = ctx.outs[0], ctx.parents[0]
+        if x.requires_grad:
+            x.grad[idx] += grad_out[idx]
 
-class Reshape(Function):
-    @staticmethod
-    def forward(ctx, input, new_shape):
-        ctx.input_shape = input.shape
-        reshaped_data = np.reshape(input.data, new_shape)
-        return FTensor(reshaped_data)
+class POW(Function):
+    def forward(ctx, x1, x2):
+        ret = Tensor(np.power(x1.data, x2.data), requires_grad=ctx.requires_grad, ctx=ctx)
+        ctx.outs.append(ret)
+        return ret
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return np.reshape(grad_output, ctx.input_shape)
+    def backward(ctx, grad_out):
+        if ctx.parents[0].requires_grad:
+            ctx.parents[0].grad += broadcast(grad_out * (ctx.parents[1] * ctx.parents[0] ** (ctx.parents[1] - 1)), ctx.parents[0].shape)
+        if ctx.parents[1].requires_grad:
+            ctx.parents[1].grad += broadcast(grad_out * ctx.parents[0].log() * ctx.outs[0], ctx.parents[1].shape)
 
-class Log(Function):
-    @staticmethod
-    def forward(ctx, input):
-        ctx.save_for_backward(input)
-        return Tensor(np.log(input.data))
+class LOG(Function):
+    def forward(ctx, x):
+        x.data[x.data <= 1e-7] = 1e-7
+        ret = Tensor(np.log(x.data), requires_grad=ctx.requires_grad, ctx=ctx)
+        return ret
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        input, = ctx.saved_tensors
-        return grad_output / input.data
+    def backward(ctx, grad_out):
+        if ctx.parents[0].requires_grad:
+            ctx.parents[0].grad += grad_out * (ctx.parents[0] ** -1)
 
-class Exp(Function):
-    @staticmethod
-    def forward(ctx, input):
-        output = Tensor(np.exp(input.data))
-        ctx.save_for_backward(output)
-        return output
+class SLC(Function):
+    def forward(ctx, x, *args):
+        ctx.outs.append(*args)
+        return Tensor(x.data.__getitem__(*args), requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        output, = ctx.saved_tensors
-        return grad_output * output.data
+    def backward(ctx, grad_out):
+        args = ctx.outs.pop()
+        ctx.parents[0].grad[args] += grad_out
 
-class ReLU(Function):
-    @staticmethod
-    def forward(ctx, input):
-        ctx.save_for_backward(input)
-        return Tensor(np.maximum(input.data, 0))
+class PERMUTE(Function):
+    def forward(ctx, x, order):
+        ctx.outs.append(np.argsort(order))
+        return Tensor(np.moveaxis(x.data, order, tuple(range(x.data.ndim))), requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        input, = ctx.saved_tensors
-        return grad_output * (input.data > 0)
+    def backward(ctx, grad_out):
+        order = ctx.outs.pop()
+        ctx.parents[0].grad += grad_out.permute(order)
 
-class Sigmoid(Function):
-    @staticmethod
-    def forward(ctx, input):
-        output = 1 / (1 + np.exp(-input.data))
-        ctx.save_for_backward(Tensor(output))
-        return Tensor(output)
+class RESHAPE(Function):
+    def forward(ctx, x, shape):
+        ctx.outs.append((shape, x.shape))
+        return Tensor(np.reshape(x.data, shape), requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        output, = ctx.saved_tensors
-        return grad_output * output.data * (1 - output.data)
+    def backward(ctx, grad_out):
+        _, oshape = ctx.outs.pop()
+        ctx.parents[0].grad += grad_out.reshape(oshape)
 
-class Tanh(Function):
-    @staticmethod
-    def forward(ctx, input):
-        output = np.tanh(input.data)
-        ctx.save_for_backward(Tensor(output))
-        return Tensor(output)
+class EMBED(Function):
+    def forward(ctx, x, idx, *, n_embd):
+        ctx.outs.append(idx)
+        out = Tensor.zeros((idx.shape[0], idx.shape[1], n_embd), requires_grad=True)
+        for bdim in range(idx.shape[0]):
+            out[bdim] = x[idx[bdim].data]
+        return Tensor(out.data, requires_grad=ctx.requires_grad, ctx=ctx)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        output, = ctx.saved_tensors
-        return grad_output * (1 - output.data ** 2)
-
-class Softmax(Function):
-    @staticmethod
-    def forward(ctx, input, axis=-1):
-        exp = np.exp(input.data - np.max(input.data, axis=axis, keepdims=True))
-        output = exp / np.sum(exp, axis=axis, keepdims=True)
-        ctx.save_for_backward(Tensor(output), axis)
-        return Tensor(output)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        output, axis = ctx.saved_tensors
-        return grad_output * output.data - output.data * np.sum(grad_output * output.data, axis=axis, keepdims=True)
+    def backward(ctx, grad_out):
+        idx = ctx.outs.pop()
+        grad = ctx.parents[0].grad
+        for bdim in range(idx.shape[0]):
+            for row, dx in enumerate(idx[bdim]):
+                grad[dx.data] += grad_out[bdim, row]

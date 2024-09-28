@@ -1,15 +1,14 @@
+from ..core.tensor import Tensor
 from .module import Module
-from ..core import FTensor
 import numpy as np
 
 class Linear(Module):
-    def __init__(self, in_features, out_features):
-        super().__init__()
-        self.weight = FTensor(np.random.randn(out_features, in_features))
-        self.bias = FTensor(np.zeros(out_features))
+    def __init__(self, feature_in, feature_out):
+        self.fin = feature_in
+        self.fout = feature_out
+        stdev = 1.0 / np.sqrt(self.fin)
+        self.weight = Tensor(np.random.uniform(-stdev, stdev, (self.fin * self.fout)).reshape(self.fin, self.fout), requires_grad=True)
+        self.bias = Tensor(np.random.uniform(-stdev, stdev, self.fout).reshape(self.fout), requires_grad=True)
 
     def forward(self, x):
-        # Ensure x is properly shaped (in_features, batch_size)
-        if x.shape[0] != self.weight.shape[1]:
-            x = x.T
-        return self.weight.dot(x) + self.bias.reshape(-1)
+        return x.matmul(self.weight) + self.bias

@@ -1,5 +1,5 @@
 from .optimizer import Optimizer
-from ..core import FTensor
+from ..core import Tensor
 import numpy as np
 
 class Adam(Optimizer):

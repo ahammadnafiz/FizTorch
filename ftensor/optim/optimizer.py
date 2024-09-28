@@ -1,12 +1,7 @@
-from ..core import FTensor
-
 class Optimizer:
-    def __init__(self, parameters):
-        self.parameters = parameters
+    def __init__(self, params):
+        self.params = params
 
     def zero_grad(self):
-        for param in self.parameters:
-            param.grad = None
-
-    def step(self):
-        raise NotImplementedError
+        for param in self.params:
+            param.grad = param.grad * 0

@@ -1,13 +1,12 @@
 import numpy as np
-from ..core import FTensor
+from abc import ABC
+from abc import abstractmethod
 
-class Dataset:
-    def __init__(self, data):
-        self.data = data
-
+class Dataset(ABC):
+    @abstractmethod
     def __len__(self):
-        return len(self.data)
+        pass
 
+    @abstractmethod
     def __getitem__(self, idx):
-        x, y = self.data[idx]
-        return FTensor(x), FTensor(y)
+        pass

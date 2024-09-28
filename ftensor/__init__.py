@@ -1,5 +1,5 @@
 # ftensor/__init__.py
-from .core import Tensor, FTensor
+from .core import Tensor
 from . import nn
 from . import optim
 from . import data
