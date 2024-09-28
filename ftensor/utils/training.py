@@ -1,10 +1,8 @@
-# ftensor/utils/training.py
 from ..nn import Module
 from ..data import DataLoader
 from ..optim import Optimizer
-from typing import Callable
 
-def train(model: Module, dataloader: DataLoader, loss_fn: Callable, optimizer: Optimizer, epochs: int):
+def train(model, dataloader, loss_fn, optimizer, epochs):
     for epoch in range(epochs):
         total_loss = 0.0
         for batch_x, batch_y in dataloader:
@@ -22,4 +20,4 @@ def train(model: Module, dataloader: DataLoader, loss_fn: Callable, optimizer: O
             total_loss += loss.data
         
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")

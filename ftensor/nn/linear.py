@@ -1,4 +1,3 @@
-# ftensor/nn/linear.py
 from .module import Module
 from ..core import FTensor
 import numpy as np

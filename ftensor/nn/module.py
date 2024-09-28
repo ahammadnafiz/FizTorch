@@ -1,16 +1,14 @@
-# ftensor/nn/module.py
-from typing import List
 from ..core import FTensor
 
 class Module:
     def __init__(self):
-        self._parameters: List[FTensor] = []
+        self._parameters = []
 
-    def parameters(self) -> List[FTensor]:
+    def parameters(self):
         return self._parameters
 
-    def forward(self, x: FTensor) -> FTensor:
+    def forward(self, x):
         raise NotImplementedError
 
-    def __call__(self, x: FTensor) -> FTensor:
+    def __call__(self, x):
         return self.forward(x)

@@ -1,11 +1,9 @@
-# ftensor/optim/adam.py
 from .optimizer import Optimizer
 from ..core import FTensor
-from typing import List
 import numpy as np
 
 class Adam(Optimizer):
-    def __init__(self, parameters: List[FTensor], learning_rate: float = 0.001, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8):
+    def __init__(self, parameters, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
         super().__init__(parameters)
         self.learning_rate = learning_rate
         self.beta1 = beta1
@@ -15,7 +13,7 @@ class Adam(Optimizer):
         self.v = [np.zeros_like(param.data) for param in parameters]
         self.t = 0
 
-    def step(self) -> None:
+    def step(self):
         self.t += 1
         for i, param in enumerate(self.parameters):
             if param.grad is not None:

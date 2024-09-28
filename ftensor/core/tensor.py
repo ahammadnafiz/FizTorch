@@ -1,31 +1,29 @@
-# ftensor/core/tensor.py
 import numpy as np
-from typing import Union, Tuple, Callable, List
 
 class Tensor:
-    def __init__(self, data: np.ndarray, requires_grad: bool = False, _children: Tuple['Tensor', ...] = ()):
-        self.data = np.array(data, dtype=np.float32)
-        self.grad: Union[np.ndarray, None] = None
+    def __init__(self, data, requires_grad=False, _children=()):
+        self.data = np.array(data)
+        self.grad = None
         self.requires_grad = requires_grad
-        self._backward: Callable[[], None] = lambda: None
+        self._backward = lambda: None
         self._children = set(_children)
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self):
         return self.data.shape
 
     @property
     def dtype(self):
         return self.data.dtype
 
-    def backward(self, gradient: Union[np.ndarray, None] = None) -> None:
+    def backward(self, gradient=None):
         if gradient is None:
             gradient = np.ones_like(self.data)
 
         topo = []
         visited = set()
 
-        def build_topo(node: 'Tensor') -> None:
+        def build_topo(node):
             if node not in visited:
                 visited.add(node)
                 for child in node._children:
@@ -38,82 +36,82 @@ class Tensor:
         for node in reversed(topo):
             node._backward()
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"Tensor(shape={self.shape}, dtype={self.dtype})\n{self.data}"
 
 class FTensor:
-    def __init__(self, data: Union[np.ndarray, List, Tuple], requires_grad: bool = False):
+    def __init__(self, data, requires_grad=False):
         self._tensor = Tensor(data, requires_grad=requires_grad)
 
     @property
-    def data(self) -> np.ndarray:
+    def data(self):
         return self._tensor.data
 
     @property
-    def grad(self) -> Union[np.ndarray, None]:
+    def grad(self):
         return self._tensor.grad
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self):
         return self._tensor.shape
 
     @property
     def dtype(self):
         return self._tensor.dtype
 
-    def backward(self) -> None:
+    def backward(self):
         self._tensor.backward()
 
-    def __add__(self, other: 'FTensor') -> 'FTensor':
+    def __add__(self, other):
         return FTensor(Add.forward(None, self._tensor, other._tensor).data)
 
-    def __mul__(self, other: 'FTensor') -> 'FTensor':
+    def __mul__(self, other):
         return FTensor(Mul.forward(None, self._tensor, other._tensor).data)
 
-    def __sub__(self, other: 'FTensor') -> 'FTensor':
+    def __sub__(self, other):
         return FTensor(Sub.forward(None, self._tensor, other._tensor).data)
 
-    def __truediv__(self, other: 'FTensor') -> 'FTensor':
+    def __truediv__(self, other):
         return FTensor(Div.forward(None, self._tensor, other._tensor).data)
 
-    def sum(self, axis: Union[int, Tuple[int, ...], None] = None) -> 'FTensor':
+    def sum(self, axis=None):
         return FTensor(Sum.forward(None, self._tensor, axis).data)
 
-    def mean(self, axis: Union[int, Tuple[int, ...], None] = None) -> 'FTensor':
+    def mean(self, axis=None):
         return FTensor(Mean.forward(None, self._tensor, axis).data)
 
-    def dot(self, other: 'FTensor') -> 'FTensor':
+    def dot(self, other):
         return FTensor(Dot.forward(None, self._tensor, other._tensor).data)
 
-    def transpose(self) -> 'FTensor':
+    def transpose(self):
         return FTensor(Transpose.forward(None, self._tensor).data)
 
-    def reshape(self, *new_shape):
-        return FTensor(Reshape.apply(self._tensor, *new_shape))
+    def reshape(self, new_shape):
+        return FTensor(Reshape.forward(self, self, new_shape))
 
-    def log(self) -> 'FTensor':
+    def log(self):
         return FTensor(Log.forward(None, self._tensor).data)
 
-    def exp(self) -> 'FTensor':
+    def exp(self):
         return FTensor(Exp.forward(None, self._tensor).data)
 
-    def relu(self) -> 'FTensor':
+    def relu(self):
         return FTensor(ReLU.forward(None, self._tensor).data)
 
-    def sigmoid(self) -> 'FTensor':
+    def sigmoid(self):
         return FTensor(Sigmoid.forward(None, self._tensor).data)
 
-    def tanh(self) -> 'FTensor':
+    def tanh(self):
         return FTensor(Tanh.forward(None, self._tensor).data)
 
-    def softmax(self, axis: int = -1) -> 'FTensor':
+    def softmax(self, axis=-1):
         return FTensor(Softmax.forward(None, self._tensor, axis).data)
 
     @property
     def T(self):
         return FTensor(self.data.T)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"FTensor(shape={self.shape}, dtype={self.dtype})\n{self.data}"
 
 # Move the import of operations to the end of the file
