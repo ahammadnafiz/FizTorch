@@ -1,4 +1,4 @@
-from ..core.tensor import Tensor
+# DataLoader can now use this dataset
 import numpy as np
 
 class DataLoader:
@@ -7,9 +7,9 @@ class DataLoader:
         self.dataset = dataset
         self.shuffle = shuffle
         self.idx = np.arange(len(self.dataset))
-        self.make_indexs()
+        self.make_indexes()
 
-    def make_indexs(self):
+    def make_indexes(self):
         self.index = 0
         if self.shuffle:
             np.random.shuffle(self.idx)
@@ -21,9 +21,9 @@ class DataLoader:
         if self.index < (len(self.dataset) // self.bs):
             slc = slice(self.index * self.bs, (self.index + 1) * self.bs)
             self.index += 1
-            return self.dataset[self.idx[slc]]
+            return [self.dataset[i] for i in self.idx[slc]]
         else:
-            self.make_indexs()
+            self.make_indexes()
             raise StopIteration
 
     def __iter__(self):

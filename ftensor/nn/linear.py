@@ -3,12 +3,31 @@ from .module import Module
 import numpy as np
 
 class Linear(Module):
-    def __init__(self, feature_in, feature_out):
-        self.fin = feature_in
-        self.fout = feature_out
-        stdev = 1.0 / np.sqrt(self.fin)
-        self.weight = Tensor(np.random.uniform(-stdev, stdev, (self.fin * self.fout)).reshape(self.fin, self.fout), requires_grad=True)
-        self.bias = Tensor(np.random.uniform(-stdev, stdev, self.fout).reshape(self.fout), requires_grad=True)
+    def __init__(self, in_features, out_features, bias=True):
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        
+        # Initialize weights using Kaiming initialization
+        bound = 1 / np.sqrt(in_features)
+        self.weight = Tensor(
+            np.random.uniform(-bound, bound, (in_features, out_features)),
+            requires_grad=True
+        )
+        
+        if bias:
+            self.bias = Tensor(
+                np.random.uniform(-bound, bound, (out_features,)),
+                requires_grad=True
+            )
+        else:
+            self.bias = None
 
     def forward(self, x):
-        return x.matmul(self.weight) + self.bias
+        output = x.matmul(self.weight)
+        if self.bias is not None:
+            output = output + self.bias
+        return output
+
+    def extra_repr(self):
+        return f'in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}'
