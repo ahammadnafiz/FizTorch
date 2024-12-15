@@ -1,120 +1,90 @@
+
 # FizTorch: A Toy Tensor Library for Machine Learning
 
 ![Logo](assets/fiztorch.png)
 
 ## Introduction ✨
-FizTorch is a toy implementation of a tensor library inspired by popular machine learning frameworks like PyTorch and TensorFlow. This project aims to create a basic tensor class with essential operations and functionality, helping you understand the core concepts behind tensor-based machine learning.
+FizTorch is a lightweight tensor library built to mimic core functionalities of machine learning frameworks like PyTorch and TensorFlow. Designed as an educational project, it provides a hands-on way to explore and understand tensor operations, gradient tracking, and basic neural network constructs.
 
 ## Key Features 🔑
-- ➕ Basic tensor operations: addition, subtraction, multiplication, division
-- 🧮 Matrix multiplication
-- 📏 Handling of tensor shapes and sizes
-- 🔄 Gradient tracking and backpropagation
-- 💾 Serialization and persistence
-- 🧪 Unit testing and comprehensive documentation
-- 🧠 Neural network modules and layers
-- 📊 Data loading and batching
-- 🔧 Optimization algorithms
+- ➕ **Basic Tensor Operations:** Element-wise addition, subtraction, multiplication, and division.
+- 🔢 **Matrix Operations:** Support for dot products and matrix multiplication.
+- 🔹 **Gradient Tracking:** Automated gradient computation for backpropagation.
+- 🔄 **Shape Manipulation:** Reshaping, flattening, and transposing tensors.
+- 🗂 **Data Utilities:** Dataset and DataLoader for batch processing.
+- 🔧 **Optimization:** Adam optimizer for training.
+- 🔖 **Neural Network Modules:** Linear layers, activation functions, and sequential models.
+- 📊 **Testing and Debugging:** Built-in unit tests and test cases for key functionalities.
 
-## Examples 🚀
-
-### Basic Tensor Operations
-
+## Test-Driven Examples 🚀
+### **1. Gradient Tracking for Basic Tensor Operations**
 ```python
 from ftensor import FTensor as ft
 
-# Creating higher-dimensional tensors
-a = ft([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])  # Shape: (2, 2, 2)
-b = ft([[[1, 0], [0, 1]], [[1, 1], [1, 1]]])  # Shape: (2, 2, 2)
+# Initialize tensors
+x = ft([1.0])
+y = ft([2.0])
+z = ft([3.0])
 
-# Basic operations
-print("a + b:\n", a + b)                          # Element-wise addition
-print("a - b:\n", a - b)                          # Element-wise subtraction
-print("a * b:\n", a * b)                          # Element-wise multiplication
+# Perform operations
+a = x + y
+b = a * z
+c = b.relu()
+d = c.sum()
 
-# Dot product
-result = a.dot(b)
-print("a.dot(b):\n", result)                      # Dot product
+d.backward()  # Compute gradients
 
-# More operations...
+# Display gradients
+print("Gradient of x:", x.grad)
+print("Gradient of y:", y.grad)
+print("Gradient of z:", z.grad)
+```
+**Output:**
+```
+Gradient of x: 3.0
+Gradient of y: 3.0
+Gradient of z: 3.0
 ```
 
-### Neural Network Training
+## Core Functionalities 🎯
+### **Completed Features**
+- ✅ Tensor Operations: Addition, subtraction, multiplication, division.
+- ✅ Matrix Multiplication: Dot products and batched operations.
+- ✅ Gradient Tracking: Automatic differentiation with `.backward()`.
+- ✅ Shape Manipulations: Reshape, flatten, and transpose.
+- ✅ Neural Network Modules: Linear layers, ReLU, Sigmoid.
+- ✅ Optimization: Adam optimizer for training.
+- ✅ Data Handling: Dataset and DataLoader for efficient batch processing.
+- ✅ Unit Testing: Comprehensive test cases for all key functionalities.
 
-```python
-import numpy as np
-from ftensor import nn, optim, data, utils
+### **Known Limitations**
+- ⚠️ Limited Broadcasting: Needs enhancement for full broadcasting support.
+- ⚠️ GPU Acceleration: Currently CPU-bound.
 
-# Create a simple dataset
-X = np.random.randn(1000, 10)
-y = np.random.randint(0, 2, (1000, 1))
-dataset = data.Dataset(list(zip(X, y)))
-dataloader = data.DataLoader(dataset, batch_size=32)
-
-# Create a model
-model = nn.Sequential(
-    nn.Linear(10, 64),
-    nn.ReLU(),
-    nn.Linear(64, 32),
-    nn.ReLU(),
-    nn.Linear(32, 1),
-    nn.Sigmoid()
-)
-
-# Define loss function and optimizer
-loss_fn = lambda pred, target: ((pred - target) ** 2).mean()
-optimizer = optim.Adam(model.parameters(), learning_rate=0.001)
-
-# Train the model
-utils.train(model, dataloader, loss_fn, optimizer, epochs=10)
-print("Training completed!")
-```
-
-## Implementation Goals 🎯
-
-### Completed Functionalities ✅
-
-- ✅ **Higher-Dimensional Tensors**: Support for tensors of arbitrary dimensions.
-- ✅ **Basic Operations**: Element-wise addition, subtraction, and multiplication.
-- ✅ **Dot Product**: Implemented dot product functionality for tensor operations.
-- ✅ **Flattening and Transposing**: Methods to flatten and transpose tensors.
-- ✅ **Element-wise Operations**: Logarithm, exponential, softmax, and ReLU derivative.
-- ✅ **Reshaping Tensors**: Reshape tensors to desired dimensions.
-- ✅ **Advanced Tensor Manipulations**: Tensor summation over specified axes.
-- ✅ **Neural Network Modules**: Implemented Linear, ReLU, and Sigmoid layers.
-- ✅ **Optimizers**: Adam optimizer for parameter updates.
-- ✅ **Data Handling**: Dataset and DataLoader classes for batch processing.
-- ✅ **Training Utility**: Helper function for model training.
-
-### Known Issues ⚠️
-
-- ⚠️ **Broadcasting Support**: Some broadcasting operations require further debugging.
-
-### Future Additions and Features 🚀
-
-- 🔲 **Additional Neural Network Layers**: Convolutional, pooling, and recurrent layers.
-- 🔲 **More Optimizers**: Implement SGD, RMSprop, and other optimization algorithms.
-- 🔲 **Support for Sparse Tensors**: Enhance functionality to handle sparse tensor representations.
-- 🔲 **GPU Acceleration**: Integrate support for GPU computations for performance improvement.
-- 🔲 **Comprehensive Documentation**: Provide detailed usage examples and API documentation.
-- 🔲 **Expanded Unit Testing**: Cover more edge cases and functionality.
-- 🔲 **Performance Benchmarks**: Create benchmarks to evaluate performance against other frameworks.
+### **Planned Features**
+- □ Advanced Layers: Convolutional, pooling, and recurrent layers.
+- □ Additional Optimizers: Support for SGD, RMSprop, and others.
+- □ Sparse Tensors: Improved handling of sparse data structures.
+- □ GPU Support: Integration with CUDA for faster computation.
+- □ Neural Network Training: Full end-to-end pipeline for training models.
+- □ Documentation: Expanded guides and tutorials.
 
 ## Getting Started 🚀
-To get started, clone the repository and set up your development environment. You'll need Python 3.x installed on your system.
-
-```bash
-git clone https://github.com/ahammadnafiz/FizTorch.git
-cd FizTorch
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ahammadnafiz/FizTorch.git
+   cd FizTorch
+   ```
+2. Set up your environment:
+   - Install Python 3.x
+   - Install dependencies using `pip install -r requirements.txt`
 
 ## Contributing 🤝
-Contributions are welcome! If you'd like to help, please follow these guidelines:
+We welcome contributions to enhance FizTorch! Follow these steps:
+1. Fork the repository.
+2. Create a feature branch.
+3. Implement changes and add tests.
+4. Submit a pull request for review.
 
-1. 🍴 Fork the repository
-2. 🌿 Create a new branch for your feature or bug fix
-3. ✍️ Write your code and add tests
-4. 📬 Submit a pull request
-
-## License
-[MIT License](LICENSE)
+## License 🔒
+FizTorch is licensed under the [MIT License](LICENSE).

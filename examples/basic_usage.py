@@ -5,89 +5,78 @@ import numpy as np
 # Add the parent directory to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import modules (assuming `ftensor` is structured with nn, optim, data, and utils modules)
-from ftensor import nn, optim, data, utils
+from ftensor.core.tensor import Tensor
 
-# Define the SimpleDataset and DataLoader if not already defined in data module
-class SimpleDataset(data.Dataset):
-    def __init__(self, data):
-        self.data = data
+# Set random seed for reproducibility
+np.random.seed(42)
 
-    def __len__(self):
-        return len(self.data)
+def test_simple_gradients():
+    # Create small tensors for easy verification
+    x = Tensor(np.array([[1.0]]), requires_grad=True)
+    y = Tensor(np.array([[2.0]]), requires_grad=True)
+    z = Tensor(np.array([[3.0]]), requires_grad=True)
+    
+    print("Initial values:")
+    print("x:", x.data[0,0])
+    print("y:", y.data[0,0])
+    print("z:", z.data[0,0])
+    
+    # Forward pass
+    a = x + y  # a = 3.0
+    print("\nAfter a = x + y:")
+    print("a:", a.data[0,0])
+    
+    b = a * z  # b = 9.0
+    print("After b = a * z:")
+    print("b:", b.data[0,0])
+    
+    c = b.relu()  # c = 9.0 (since b > 0)
+    print("After c = b.relu():")
+    print("c:", c.data[0,0])
+    
+    d = c.sum()  # d = 9.0
+    print("After d = c.sum():")
+    print("d:", d.data)
+    
+    # Backward pass
+    d.backward()
+    
+    print("\nGradients:")
+    print("x.grad:", x.grad.data[0,0] if x.grad is not None else None)  # Should be 3.0
+    print("y.grad:", y.grad.data[0,0] if y.grad is not None else None)  # Should be 3.0
+    print("z.grad:", z.grad.data[0,0] if z.grad is not None else None)  # Should be 3.0
 
-    def __getitem__(self, idx):
-        return self.data[idx]
+def test_larger_gradients():
+    # Test with the original dimensions
+    np.random.seed(42)
+    x = Tensor(np.random.randn(10, 5), requires_grad=True)
+    y = Tensor(np.random.randn(10, 5), requires_grad=True)
+    z = Tensor(np.random.randn(10, 5), requires_grad=True)
+    
+    # Forward pass
+    a = x + y
+    b = a * z
+    c = b.relu()
+    d = c.sum()
+    
+    # Backward pass
+    d.backward()
+    print(d.data)
+    
+    print("\nLarger tensor test:")
+    print("x.grad exists:", x.grad is not None)
+    print("y.grad exists:", y.grad is not None)
+    print("z.grad exists:", z.grad is not None)
+    print("Sample gradients at [0,0]:")
+    print("x.grad[0,0]:", x.grad.data[1,0] if x.grad is not None else None)
+    print("y.grad[0,0]:", y.grad.data[0,2] if y.grad is not None else None)
+    print("z.grad[0,0]:", z.grad.data[0,0] if z.grad is not None else None)
 
-class DataLoader:
-    def __init__(self, dataset, batch_size=8, shuffle=False):
-        self.bs = batch_size
-        self.dataset = dataset
-        self.shuffle = shuffle
-        self.idx = np.arange(len(self.dataset))
-        self.make_indexes()
-
-    def make_indexes(self):
-        self.index = 0
-        if self.shuffle:
-            np.random.shuffle(self.idx)
-
-    def __len__(self):
-        return (len(self.dataset) // self.bs)
-
-    def __next__(self):
-        if self.index < (len(self.dataset) // self.bs):
-            slc = slice(self.index * self.bs, (self.index + 1) * self.bs)
-            self.index += 1
-            # Unpack the batch into separate arrays for X and y
-            batch = [self.dataset[i] for i in self.idx[slc]]
-            return np.array([item[0] for item in batch]), np.array([item[1] for item in batch])  # Unpacking
-        else:
-            self.make_indexes()
-            raise StopIteration
-
-    def __iter__(self):
-        return self
-
-# Create dataset and dataloader
-X = np.random.randn(1000, 10)
-y = np.random.randint(0, 2, (1000, 1))
-dataset = SimpleDataset(list(zip(X, y)))
-dataloader = DataLoader(dataset, batch_size=32)
-
-# Create a model
-model = nn.Sequential(
-    nn.Linear(10, 64),
-    nn.ReLU(),
-    nn.Linear(64, 32),
-    nn.ReLU(),
-    nn.Linear(32, 1),
-    nn.Sigmoid()
-)
-
-# Define loss function and optimizer
-loss_fn = lambda pred, target: ((pred - target) ** 2).mean()
-optimizer = optim.Adam(model.parameters(), learning_rate=0.001)
-
-def train(model, dataloader, loss_fn, optimizer, epochs):
-    for epoch in range(epochs):
-        for batch in dataloader:
-            # Unpack batch into separate input and target arrays
-            X_batch, y_batch = zip(*batch)
-            X_batch, y_batch = np.array(X_batch), np.array(y_batch)
-
-            # Forward pass
-            predictions = model.forward(X_batch)
-            loss = loss_fn(predictions, y_batch)
-
-            # Backward pass and optimization
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss}")
-
-# Train the model
-utils.train(model, dataloader, loss_fn, optimizer, epochs=10)
-print("Training completed!")
-
+if __name__ == "__main__":
+    print("Testing with simple values:")
+    print("-" * 40)
+    test_simple_gradients()
+    
+    print("\nTesting with larger tensors:")
+    print("-" * 40)
+    test_larger_gradients()
