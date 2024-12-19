@@ -2,89 +2,166 @@
 # FizTorch: A Toy Tensor Library for Machine Learning
 
 ![Logo](assets/fiztorch.png)
+[![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://travis-ci.org/yourusername/FizTorch)
 
-## Introduction ✨
-FizTorch is a lightweight tensor library built to mimic core functionalities of machine learning frameworks like PyTorch and TensorFlow. Designed as an educational project, it provides a hands-on way to explore and understand tensor operations, gradient tracking, and basic neural network constructs.
 
-## Key Features 🔑
-- ➕ **Basic Tensor Operations:** Element-wise addition, subtraction, multiplication, and division.
-- 🔢 **Matrix Operations:** Support for dot products and matrix multiplication.
-- 🔹 **Gradient Tracking:** Automated gradient computation for backpropagation.
-- 🔄 **Shape Manipulation:** Reshaping, flattening, and transposing tensors.
-- 🗂 **Data Utilities:** Dataset and DataLoader for batch processing.
-- 🔧 **Optimization:** Adam optimizer for training.
-- 🔖 **Neural Network Modules:** Linear layers, activation functions, and sequential models.
-- 📊 **Testing and Debugging:** Built-in unit tests and test cases for key functionalities.
+FizTorch is a lightweight deep learning framework designed for educational purposes and small-scale projects. It provides a simple and intuitive API for building and training neural networks, inspired by popular frameworks like PyTorch.
 
-## Test-Driven Examples 🚀
-### **1. Gradient Tracking for Basic Tensor Operations**
-```python
-from ftensor import FTensor as ft
+## Table of Contents
 
-# Initialize tensors
-x = ft([1.0])
-y = ft([2.0])
-z = ft([3.0])
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Contributing](#contributing)
+- [License](#license)
 
-# Perform operations
-a = x + y
-b = a * z
-c = b.relu()
-d = c.sum()
+## Features
 
-d.backward()  # Compute gradients
+- **Tensor Operations**: Basic tensor operations with support for automatic differentiation.
+- **Neural Network Layers**: Common neural network layers such as Linear and ReLU.
+- **Sequential Model**: Easy-to-use sequential model for stacking layers.
+- **Functional API**: Functional operations for common neural network functions.
 
-# Display gradients
-print("Gradient of x:", x.grad)
-print("Gradient of y:", y.grad)
-print("Gradient of z:", z.grad)
-```
-**Output:**
-```
-Gradient of x: 3.0
-Gradient of y: 3.0
-Gradient of z: 3.0
-```
+## Installation
 
-## Core Functionalities 🎯
-### **Completed Features**
-- ✅ Tensor Operations: Addition, subtraction, multiplication, division.
-- ✅ Matrix Multiplication: Dot products and batched operations.
-- ✅ Gradient Tracking: Automatic differentiation with `.backward()`.
-- ✅ Shape Manipulations: Reshape, flatten, and transpose.
-- ✅ Neural Network Modules: Linear layers, ReLU, Sigmoid.
-- ✅ Optimization: Adam optimizer for training.
-- ✅ Data Handling: Dataset and DataLoader for efficient batch processing.
-- ✅ Unit Testing: Comprehensive test cases for all key functionalities.
+To install FizTorch, follow these steps:
 
-### **Known Limitations**
-- ⚠️ Limited Broadcasting: Needs enhancement for full broadcasting support.
-- ⚠️ GPU Acceleration: Currently CPU-bound.
-
-### **Planned Features**
-- □ Advanced Layers: Convolutional, pooling, and recurrent layers.
-- □ Additional Optimizers: Support for SGD, RMSprop, and others.
-- □ Sparse Tensors: Improved handling of sparse data structures.
-- □ GPU Support: Integration with CUDA for faster computation.
-- □ Neural Network Training: Full end-to-end pipeline for training models.
-- □ Documentation: Expanded guides and tutorials.
-
-## Getting Started 🚀
-1. Clone the repository:
-   ```bash
+1. **Clone the Repository**:
+   ```sh
    git clone https://github.com/ahammadnafiz/FizTorch.git
    cd FizTorch
    ```
-2. Set up your environment:
-   - Install Python 3.x
-   - Install dependencies using `pip install -r requirements.txt`
 
-## Contributing 🤝
-We welcome contributions to enhance FizTorch! Follow these steps:
+2. **Set Up a Virtual Environment** (optional but recommended):
+   ```sh
+   python -m venv fiztorch-env
+   source fiztorch-env/bin/activate  # On Windows, use `fiztorch-env\Scripts\activate`
+   ```
+
+3. **Install Dependencies**:
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+4. **Install FizTorch**:
+   ```sh
+   pip install -e .
+   ```
+
+## Usage
+
+Here is a simple example of how to use FizTorch to build and train a neural network:
+
+```python
+import numpy as np
+from fiztorch.tensor import Tensor
+from fiztorch.nn import Linear, ReLU, Sequential
+import fiztorch.nn.functional as F
+
+# Define a simple neural network
+model = Sequential(
+    Linear(2, 3),
+    ReLU(),
+    Linear(3, 1)
+)
+
+# Create some input data
+input = Tensor([[1.0, 2.0]], requires_grad=True)
+
+# Forward pass
+output = model(input)
+
+# Backward pass
+output.backward()
+
+# Print the gradients
+print(input.grad)
+```
+
+## Examples
+
+### Linear Layer
+
+```python
+from fiztorch.tensor import Tensor
+from fiztorch.nn import Linear
+
+# Create a linear layer
+layer = Linear(2, 3)
+
+# Create some input data
+input = Tensor([[1.0, 2.0]])
+
+# Forward pass
+output = layer(input)
+
+# Print the output
+print(output)
+```
+
+### ReLU Activation
+
+```python
+from fiztorch.tensor import Tensor
+from fiztorch.nn import ReLU
+
+# Create a ReLU activation
+relu = ReLU()
+
+# Create some input data
+input = Tensor([-1.0, 0.0, 1.0])
+
+# Forward pass
+output = relu(input)
+
+# Print the output
+print(output)
+```
+
+### Sequential Model
+
+```python
+from fiztorch.tensor import Tensor
+from fiztorch.nn import Linear, ReLU, Sequential
+
+# Define a sequential model
+model = Sequential(
+    Linear(2, 3),
+    ReLU(),
+    Linear(3, 1)
+)
+
+# Create some input data
+input = Tensor([[1.0, 2.0]])
+
+# Forward pass
+output = model(input)
+
+# Print the output
+print(output)
+```
+
+## Contributing
+
+Contributions are welcome! Please follow these steps to contribute:
+
 1. Fork the repository.
-2. Create a feature branch.
-3. Implement changes and add tests.
-4. Submit a pull request for review.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Commit your changes (`git commit -am 'Add new feature'`).
+4. Push to the branch (`git push origin feature-branch`).
+5. Create a new Pull Request.
 
-## License 🔒
-FizTorch is licensed under the [MIT License](LICENSE).
+## License
+
+FizTorch is licensed under the MIT License. See the [LICENSE](https://github.com/ahammadnafiz/FizTorch/blob/main/LICENSE) file for more information.
+
+## Contact
+
+For any questions or feedback, please open an issue or contact the maintainers.
+
+---
+
+Made with ❤️ by [Your Name](https://github.com/ahammadnafiz)
