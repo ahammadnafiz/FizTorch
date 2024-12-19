@@ -164,4 +164,4 @@ For any questions or feedback, please open an issue or contact the maintainers.
 
 ---
 
-Made with ❤️ by [Your Name](https://github.com/ahammadnafiz)
+Made with ❤️ by [ahammadnafiz](https://github.com/ahammadnafiz)
