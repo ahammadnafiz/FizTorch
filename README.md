@@ -83,6 +83,11 @@ print(input.grad)
 
 ## Examples
 
+## MNIST HAND DIGIT TEST
+Neural network training on MNIST digits using a FizTorch library with Adam optimizer (configurable learning rate), batch support, real-time accuracy/loss tracking
+![Training Process](assets/training_progress.gif)
+
+
 ### Linear Layer
 
 ```python

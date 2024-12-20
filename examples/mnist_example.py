@@ -8,6 +8,10 @@ from sklearn.datasets import load_digits
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+
+from matplotlib.animation import FuncAnimation, PillowWriter
+import matplotlib.gridspec as gridspec
+
 from fiztorch.tensor import Tensor
 from fiztorch.nn import Linear, ReLU, Sequential
 import fiztorch.nn.functional as F
@@ -155,6 +159,63 @@ def plot_metrics(epoch, train_losses, train_accuracies, test_accuracies):
     plt.tight_layout()
     plt.show()
 
+def create_training_animation(train_losses, train_accuracies, test_accuracies, save_path='training_progress.gif'):
+    # Create figure and subplots
+    fig = plt.figure(figsize=(12, 6))
+    gs = gridspec.GridSpec(1, 2, figure=fig)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
+
+    # Maximum values for scaling
+    max_loss = max(train_losses)
+    max_acc = max(max(train_accuracies), max(test_accuracies))
+
+    def animate(frame):
+        ax1.clear()
+        ax2.clear()
+
+        # Get data up to current frame
+        current_losses = train_losses[:frame+1]
+        current_train_acc = train_accuracies[:frame+1]
+        current_test_acc = test_accuracies[:frame+1]
+        epochs = range(1, frame+2)
+
+        # Plot Loss
+        ax1.plot(epochs, current_losses, 'b-', label='Train Loss')
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Loss')
+        ax1.set_title('Training Loss over Epochs')
+        ax1.legend()
+        ax1.set_ylim(0, max_loss * 1.1)
+        ax1.grid(True, linestyle='--', alpha=0.7)
+
+        # Plot Accuracy
+        ax2.plot(epochs, current_train_acc, 'g-', label='Train Accuracy')
+        ax2.plot(epochs, current_test_acc, 'r-', label='Test Accuracy')
+        ax2.set_xlabel('Epoch')
+        ax2.set_ylabel('Accuracy')
+        ax2.set_title('Accuracy over Epochs')
+        ax2.legend()
+        ax2.set_ylim(0, max_acc * 1.1)
+        ax2.grid(True, linestyle='--', alpha=0.7)
+
+        plt.tight_layout()
+
+    # Create animation
+    n_frames = len(train_losses)
+    anim = FuncAnimation(
+        fig, 
+        animate, 
+        frames=n_frames,
+        interval=50,  # 50ms between frames
+        repeat=True
+    )
+
+    # Save as GIF
+    writer = PillowWriter(fps=20)
+    anim.save(save_path, writer=writer)
+    plt.close()
+
 def main():
     try:
         # Load data
@@ -164,10 +225,7 @@ def main():
         # Create model and optimizer
         print("Creating model...")
         model = create_model()
-        # optimizer = opt.SGD(model.parameters(), lr=0.01)
         optimizer = opt.Adam(model.parameters(), lr=0.001)
-        # optimizer = opt.Adagrad(model.parameters(), lr=0.001)
-        
 
         # Training parameters
         n_epochs = 500
@@ -195,8 +253,10 @@ def main():
                 print(f"Test Accuracy: {test_acc:.4f}")
                 print("-" * 50)
 
-        # Plot metrics
-        plot_metrics(n_epochs, train_losses, train_accuracies, test_accuracies)
+        # Create and save the training animation
+        print("Creating training progress animation...")
+        create_training_animation(train_losses, train_accuracies, test_accuracies)
+        print("Animation saved as 'training_progress.gif'")
 
     except Exception as e:
         print(f"Error in main execution: {str(e)}")
