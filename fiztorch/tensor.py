@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Union, Optional
+from typing import Union, Optional
 
 def _unbroadcast(grad, shape):
     """

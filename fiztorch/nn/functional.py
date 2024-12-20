@@ -1,4 +1,4 @@
-from typing import Optional, Union, Literal
+from typing import Literal
 import numpy as np
 from abc import ABC, abstractmethod
 from ..tensor import Tensor
