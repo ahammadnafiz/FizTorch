@@ -14,5 +14,7 @@ class SGD:
     def step(self):
         for param in self.parameters:
             if param.grad is not None:
+                # print(f"Before update: {param.data}")
                 param.data -= self.lr * param.grad.data
-                param.grad = None  # Zero out the gradient after update
+                # param.grad = None  # Zero out the gradient after update
+                print(f"After update: {param.data}")

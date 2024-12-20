@@ -29,16 +29,45 @@ def mse_loss(input: Tensor, target: Tensor, reduction: str = 'mean') -> Tensor:
     else:
         return diff * diff
 
-# def cross_entropy(input: Tensor, target: Tensor, reduction: str = 'mean') -> Tensor:
-#     """Cross entropy loss."""
-#     log_probs = softmax(input, dim=-1)
-#     nll = -log_probs.data[np.arange(len(target.data)), target.data.astype(int)]
-#     if reduction == 'mean':
-#         return Tensor(np.mean(nll), requires_grad=input.requires_grad)
-#     elif reduction == 'sum':
-#         return Tensor(np.sum(nll), requires_grad=input.requires_grad)
-#     else:
-#         return Tensor(nll, requires_grad=input.requires_grad)
+def cross_entropy(input: Tensor, target: Tensor, reduction: str = 'mean') -> Tensor:
+    """
+    Cross entropy loss that handles both integer class indices and one-hot encoded labels.
+    
+    Args:
+        input (Tensor): Logits from the model, shape (batch_size, num_classes).
+        target (Tensor): Targets, either:
+            - Integer class indices, shape (batch_size,)
+            - One-hot encoded labels, shape (batch_size, num_classes)
+        reduction (str): Specifies the reduction to apply. Options: 'mean', 'sum', or 'none'.
+
+    Returns:
+        Tensor: Computed cross-entropy loss.
+    """
+    # Compute softmax probabilities
+    log_probs = softmax(input, dim=-1)
+    
+    # Check if target is one-hot encoded (2D) or class indices (1D)
+    if target.data.ndim == 2:
+        # Convert one-hot encoded targets to integer class indices
+        target_indices = np.argmax(target.data, axis=1)
+    elif target.data.ndim == 1:
+        target_indices = target.data.astype(int)
+    else:
+        raise ValueError("Target must be 1D (class indices) or 2D (one-hot encoded).")
+    
+    # Negative log likelihood
+    nll = -log_probs.data[np.arange(len(target_indices)), target_indices]
+    
+    # Apply reduction
+    if reduction == 'mean':
+        return Tensor(np.mean(nll), requires_grad=input.requires_grad)
+    elif reduction == 'sum':
+        return Tensor(np.sum(nll), requires_grad=input.requires_grad)
+    elif reduction == 'none':
+        return Tensor(nll, requires_grad=input.requires_grad)
+    else:
+        raise ValueError("Invalid reduction type. Must be 'mean', 'sum', or 'none'.")
+
 
 def softmax(input: Tensor, dim: int = -1) -> Tensor:
     """Applies the softmax function with proper gradient computation."""
@@ -58,35 +87,35 @@ def softmax(input: Tensor, dim: int = -1) -> Tensor:
     
     return result
 
-def cross_entropy(input: Tensor, target: Tensor, reduction: str = 'mean') -> Tensor:
-    """Cross entropy loss with proper gradient computation."""
-    batch_size = len(input.data)
-    softmax_output = softmax(input, dim=-1)
+# def cross_entropy(input: Tensor, target: Tensor, reduction: str = 'mean') -> Tensor:
+#     """Cross entropy loss with proper gradient computation."""
+#     batch_size = len(input.data)
+#     softmax_output = softmax(input, dim=-1)
     
-    # Compute cross entropy loss
-    log_probs = np.log(softmax_output.data + 1e-8)  # Add small epsilon for numerical stability
-    nll = -log_probs[np.arange(batch_size), target.data.astype(int)]
+#     # Compute cross entropy loss
+#     log_probs = np.log(softmax_output.data + 1e-8)  # Add small epsilon for numerical stability
+#     nll = -log_probs[np.arange(batch_size), target.data.astype(int)]
     
-    if reduction == 'mean':
-        loss_value = np.mean(nll)
-    elif reduction == 'sum':
-        loss_value = np.sum(nll)
-    else:
-        loss_value = nll
+#     if reduction == 'mean':
+#         loss_value = np.mean(nll)
+#     elif reduction == 'sum':
+#         loss_value = np.sum(nll)
+#     else:
+#         loss_value = nll
         
-    result = Tensor(loss_value, requires_grad=input.requires_grad)
+#     result = Tensor(loss_value, requires_grad=input.requires_grad)
     
-    if input.requires_grad:
-        def _backward(gradient):
-            # Compute gradient for cross entropy loss
-            grad = softmax_output.data.copy()
-            grad[np.arange(batch_size), target.data.astype(int)] -= 1
-            if reduction == 'mean':
-                grad = grad / batch_size
-            elif reduction == 'sum':
-                grad = grad
-            input.backward(Tensor(grad * gradient.data, requires_grad=input.requires_grad))
-        result._grad_fn = _backward
-        result.is_leaf = False
+#     if input.requires_grad:
+#         def _backward(gradient):
+#             # Compute gradient for cross entropy loss
+#             grad = softmax_output.data.copy()
+#             grad[np.arange(batch_size), target.data.astype(int)] -= 1
+#             if reduction == 'mean':
+#                 grad = grad / batch_size
+#             elif reduction == 'sum':
+#                 grad = grad
+#             input.backward(Tensor(grad * gradient.data, requires_grad=input.requires_grad))
+#         result._grad_fn = _backward
+#         result.is_leaf = False
     
-    return result
+#     return result

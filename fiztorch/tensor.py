@@ -21,75 +21,82 @@ def _unbroadcast(grad, shape):
 class Tensor:
     def __init__(self, data: Union[np.ndarray, list, float], requires_grad: bool = False):
         if isinstance(data, np.ndarray):
-            self.data = data
+            self.data = data.astype(np.float64)  # Ensure float64 for numerical stability
         else:
-            self.data = np.array(data)
+            self.data = np.array(data, dtype=np.float64)
 
         self.requires_grad = requires_grad
-        self.grad = None
+        self.grad = None if requires_grad else None
         self._grad_fn = None
         self.is_leaf = True
 
-    @property
-    def shape(self) -> Tuple:
-        return self.data.shape
+    def zero_grad(self):
+        """Reset the gradient to zero"""
+        if self.requires_grad:
+            self.grad = None
 
-    @property
-    def T(self) -> 'Tensor':
-        return Tensor(self.data.T, requires_grad=self.requires_grad)
-
-    def backward(self, gradient: Optional['Tensor'] = None) -> None:
+    def backward(self, gradient: Optional[Union['Tensor', np.ndarray]] = None) -> None:
         if not self.requires_grad:
             return
 
+        # Handle the case when gradient is None (implicit gradient of 1.0)
         if gradient is None:
-            gradient = Tensor(np.ones_like(self.data), requires_grad=self.requires_grad)
+            gradient = np.ones_like(self.data)
+        elif isinstance(gradient, Tensor):
+            gradient = gradient.data
 
+        # Accumulate the gradient
         if self.grad is None:
-            self.grad = Tensor(gradient.data, requires_grad=self.requires_grad)
+            self.grad = Tensor(gradient)
         else:
-            self.grad = Tensor(self.grad.data + gradient.data, requires_grad=self.requires_grad)
+            self.grad.data += gradient
 
+        # Propagate gradient to inputs if there's a gradient function
         if self._grad_fn is not None:
-            self._grad_fn(gradient)
+            self._grad_fn(Tensor(gradient))
+
+        # Debugging: Print gradient for the tensor
+        print(f"Gradient for tensor {self.data}: {self.grad.data}")
+
 
     def __add__(self, other: Union['Tensor', float]) -> 'Tensor':
-        other_data = other.data if isinstance(other, Tensor) else np.array(other)
+        other_data = other.data if isinstance(other, Tensor) else np.array(other, dtype=np.float64)
         result = Tensor(self.data + other_data, requires_grad=self.requires_grad or 
-                       (isinstance(other, Tensor) and other.requires_grad))
+                    (isinstance(other, Tensor) and other.requires_grad))
 
-        if self.requires_grad or (isinstance(other, Tensor) and other.requires_grad):
+        if result.requires_grad:
             def _backward(gradient):
                 if self.requires_grad:
                     unbroadcast_grad = _unbroadcast(gradient.data, self.data.shape)
-                    self.backward(Tensor(unbroadcast_grad, requires_grad=self.requires_grad))
+                    self.backward(unbroadcast_grad)
                 if isinstance(other, Tensor) and other.requires_grad:
                     unbroadcast_grad = _unbroadcast(gradient.data, other.data.shape)
-                    other.backward(Tensor(unbroadcast_grad, requires_grad=other.requires_grad))
+                    other.backward(unbroadcast_grad)
             result._grad_fn = _backward
             result.is_leaf = False
 
         return result
 
     def __mul__(self, other: Union['Tensor', float]) -> 'Tensor':
-        other_data = other.data if isinstance(other, Tensor) else np.array(other)
+        other_data = other.data if isinstance(other, Tensor) else np.array(other, dtype=np.float64)
         result = Tensor(self.data * other_data, requires_grad=self.requires_grad or 
-                       (isinstance(other, Tensor) and other.requires_grad))
+                    (isinstance(other, Tensor) and other.requires_grad))
 
-        if self.requires_grad or (isinstance(other, Tensor) and other.requires_grad):
+        if result.requires_grad:
             def _backward(gradient):
                 if self.requires_grad:
                     grad = gradient.data * other_data
                     unbroadcast_grad = _unbroadcast(grad, self.data.shape)
-                    self.backward(Tensor(unbroadcast_grad, requires_grad=self.requires_grad))
+                    self.backward(unbroadcast_grad)
                 if isinstance(other, Tensor) and other.requires_grad:
                     grad = gradient.data * self.data
                     unbroadcast_grad = _unbroadcast(grad, other.data.shape)
-                    other.backward(Tensor(unbroadcast_grad, requires_grad=other.requires_grad))
+                    other.backward(unbroadcast_grad)
             result._grad_fn = _backward
             result.is_leaf = False
 
         return result
+
 
     def sum(self, axis=None, keepdims=False) -> 'Tensor':
         result = Tensor(np.sum(self.data, axis=axis, keepdims=keepdims), 
@@ -114,16 +121,23 @@ class Tensor:
         if not isinstance(other, Tensor):
             raise TypeError("Matrix multiplication is only defined between tensors")
             
-        result = Tensor(self.data @ other.data, requires_grad=self.requires_grad or other.requires_grad)
+        result = Tensor(self.data @ other.data, 
+                       requires_grad=(self.requires_grad or other.requires_grad))
 
         if self.requires_grad or other.requires_grad:
             def _backward(gradient):
                 if self.requires_grad:
                     grad = gradient.data @ other.data.T
-                    self.backward(Tensor(grad, requires_grad=self.requires_grad))
+                    if self.grad is None:
+                        self.grad = Tensor(grad, requires_grad=self.requires_grad)
+                    else:
+                        self.grad.data += grad
                 if other.requires_grad:
                     grad = self.data.T @ gradient.data
-                    other.backward(Tensor(grad, requires_grad=other.requires_grad))
+                    if other.grad is None:
+                        other.grad = Tensor(grad, requires_grad=other.requires_grad)
+                    else:
+                        other.grad.data += grad
             result._grad_fn = _backward
             result.is_leaf = False
 
