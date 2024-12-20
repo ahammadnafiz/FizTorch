@@ -11,64 +11,26 @@ from sklearn.preprocessing import StandardScaler
 from fiztorch.tensor import Tensor
 from fiztorch.nn import Linear, ReLU, Sequential
 import fiztorch.nn.functional as F
-from fiztorch.optim.optimizer import SGD
+import fiztorch.optim.optimizer as opt
 
-def load_mnist_data():
-    try:
-        # Fetch the MNIST dataset from OpenML
-        mnist = fetch_openml('mnist_784', version=1)
-        X, y = mnist.data, mnist.target.astype(int)
-
-        # Normalize the data
-        scaler = StandardScaler()
-        X = scaler.fit_transform(X)
-
-        # Split the data into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-
-        # Verify data shapes before converting to tensors
-        assert X_train.shape[1] == 784, "Input features should be 784-dimensional"
-        assert len(np.unique(y)) == 10, "Should have 10 classes"
-
-        return (Tensor(X_train), Tensor(y_train), 
-                Tensor(X_test), Tensor(y_test))
-    except Exception as e:
-        print(f"Error loading MNIST data: {str(e)}")
-        raise
-
-def create_model():
-    try:
-        model = Sequential(
-            Linear(784, 128),  # Updated input size to 784
-            ReLU(),
-            Linear(128, 64),
-            ReLU(),
-            Linear(64, 10)
-        )
-        return model
-    except Exception as e:
-        print(f"Error creating model: {str(e)}")
-        raise
-
-
+# Original mnist digit data from openml
 # def load_mnist_data():
 #     try:
-#         digits = load_digits()
-#         X, y = digits.data, digits.target
+#         # Fetch the MNIST dataset from OpenML
+#         mnist = fetch_openml('mnist_784', version=1)
+#         X, y = mnist.data, mnist.target.astype(int)
 
 #         # Normalize the data
 #         scaler = StandardScaler()
 #         X = scaler.fit_transform(X)
 
-#         # Split the data
+#         # Split the data into training and testing sets
 #         X_train, X_test, y_train, y_test = train_test_split(
 #             X, y, test_size=0.2, random_state=42
 #         )
 
 #         # Verify data shapes before converting to tensors
-#         assert X_train.shape[1] == 64, "Input features should be 64-dimensional"
+#         assert X_train.shape[1] == 784, "Input features should be 784-dimensional"
 #         assert len(np.unique(y)) == 10, "Should have 10 classes"
 
 #         return (Tensor(X_train), Tensor(y_train), 
@@ -80,7 +42,7 @@ def create_model():
 # def create_model():
 #     try:
 #         model = Sequential(
-#             Linear(64, 128),
+#             Linear(784, 128),  # Updated input size to 784
 #             ReLU(),
 #             Linear(128, 64),
 #             ReLU(),
@@ -90,6 +52,45 @@ def create_model():
 #     except Exception as e:
 #         print(f"Error creating model: {str(e)}")
 #         raise
+
+
+def load_mnist_data():
+    try:
+        digits = load_digits()
+        X, y = digits.data, digits.target
+
+        # Normalize the data
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        # Verify data shapes before converting to tensors
+        assert X_train.shape[1] == 64, "Input features should be 64-dimensional"
+        assert len(np.unique(y)) == 10, "Should have 10 classes"
+
+        return (Tensor(X_train), Tensor(y_train), 
+                Tensor(X_test), Tensor(y_test))
+    except Exception as e:
+        print(f"Error loading MNIST data: {str(e)}")
+        raise
+
+def create_model():
+    try:
+        model = Sequential(
+            Linear(64, 128),
+            ReLU(),
+            Linear(128, 64),
+            ReLU(),
+            Linear(64, 10)
+        )
+        return model
+    except Exception as e:
+        print(f"Error creating model: {str(e)}")
+        raise
 
 def train_epoch(model, optimizer, X_train, y_train, batch_size):
     try:
@@ -163,10 +164,13 @@ def main():
         # Create model and optimizer
         print("Creating model...")
         model = create_model()
-        optimizer = SGD(model.parameters(), lr=0.01)
+        # optimizer = opt.SGD(model.parameters(), lr=0.01)
+        optimizer = opt.Adam(model.parameters(), lr=0.001)
+        # optimizer = opt.Adagrad(model.parameters(), lr=0.001)
+        
 
         # Training parameters
-        n_epochs = 50
+        n_epochs = 500
         batch_size = 32
 
         train_losses = []
