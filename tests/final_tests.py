@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
 import numpy as np
 from fiztorch import Tensor
+from fiztorch.optim.optimizer import SGD
 
 def test_tensor_creation():
     # Test different data types

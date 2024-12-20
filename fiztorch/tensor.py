@@ -30,11 +30,29 @@ class Tensor:
         self._grad_fn = None
         self.is_leaf = True
 
+    @property
+    def shape(self):
+        """Return the shape of the underlying numpy array"""
+        return self.data.shape
+
+    @property
+    def T(self):
+        """Return a new tensor that is the transpose of this tensor"""
+        result = Tensor(self.data.T, requires_grad=self.requires_grad)
+        
+        if self.requires_grad:
+            def _backward(gradient):
+                self.backward(Tensor(gradient.data.T))
+            result._grad_fn = _backward
+            result.is_leaf = False
+            
+        return result
+
     def zero_grad(self):
         """Reset the gradient to zero"""
         if self.requires_grad:
             self.grad = None
-
+    
     def backward(self, gradient: Optional[Union['Tensor', np.ndarray]] = None) -> None:
         if not self.requires_grad:
             return
@@ -45,19 +63,15 @@ class Tensor:
         elif isinstance(gradient, Tensor):
             gradient = gradient.data
 
-        # Accumulate the gradient
+        # Initialize or accumulate the gradient
         if self.grad is None:
             self.grad = Tensor(gradient)
         else:
-            self.grad.data += gradient
+            self.grad = Tensor(self.grad.data + gradient)  # Create new Tensor instead of modifying data
 
         # Propagate gradient to inputs if there's a gradient function
         if self._grad_fn is not None:
             self._grad_fn(Tensor(gradient))
-
-        # Debugging: Print gradient for the tensor
-        print(f"Gradient for tensor {self.data}: {self.grad.data}")
-
 
     def __add__(self, other: Union['Tensor', float]) -> 'Tensor':
         other_data = other.data if isinstance(other, Tensor) else np.array(other, dtype=np.float64)
@@ -87,31 +101,11 @@ class Tensor:
                 if self.requires_grad:
                     grad = gradient.data * other_data
                     unbroadcast_grad = _unbroadcast(grad, self.data.shape)
-                    self.backward(unbroadcast_grad)
+                    self.backward(Tensor(unbroadcast_grad))
                 if isinstance(other, Tensor) and other.requires_grad:
                     grad = gradient.data * self.data
                     unbroadcast_grad = _unbroadcast(grad, other.data.shape)
-                    other.backward(unbroadcast_grad)
-            result._grad_fn = _backward
-            result.is_leaf = False
-
-        return result
-
-
-    def sum(self, axis=None, keepdims=False) -> 'Tensor':
-        result = Tensor(np.sum(self.data, axis=axis, keepdims=keepdims), 
-                       requires_grad=self.requires_grad)
-
-        if self.requires_grad:
-            def _backward(gradient):
-                # If axis is None, gradient.data is a scalar
-                if axis is None:
-                    grad = np.full(self.data.shape, gradient.data)
-                else:
-                    # Expand gradient to match original shape
-                    grad = np.expand_dims(gradient.data, axis=axis)
-                    grad = np.broadcast_to(grad, self.data.shape)
-                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+                    other.backward(Tensor(unbroadcast_grad))
             result._grad_fn = _backward
             result.is_leaf = False
 
@@ -124,20 +118,12 @@ class Tensor:
         result = Tensor(self.data @ other.data, 
                        requires_grad=(self.requires_grad or other.requires_grad))
 
-        if self.requires_grad or other.requires_grad:
+        if result.requires_grad:
             def _backward(gradient):
                 if self.requires_grad:
-                    grad = gradient.data @ other.data.T
-                    if self.grad is None:
-                        self.grad = Tensor(grad, requires_grad=self.requires_grad)
-                    else:
-                        self.grad.data += grad
+                    self.backward(gradient @ other.T)
                 if other.requires_grad:
-                    grad = self.data.T @ gradient.data
-                    if other.grad is None:
-                        other.grad = Tensor(grad, requires_grad=other.requires_grad)
-                    else:
-                        other.grad.data += grad
+                    other.backward(self.T @ gradient)
             result._grad_fn = _backward
             result.is_leaf = False
 
@@ -164,6 +150,23 @@ class Tensor:
             def _backward(gradient):
                 grad = gradient.data * (power * self.data ** (power - 1))
                 self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
+
+    def sum(self, axis=None, keepdims=False) -> 'Tensor':
+        result = Tensor(np.sum(self.data, axis=axis, keepdims=keepdims), 
+                       requires_grad=self.requires_grad)
+
+        if self.requires_grad:
+            def _backward(gradient):
+                if axis is None:
+                    grad = np.full(self.data.shape, gradient.data)
+                else:
+                    grad = np.expand_dims(gradient.data, axis=axis)
+                    grad = np.broadcast_to(grad, self.data.shape)
+                self.backward(Tensor(grad))
             result._grad_fn = _backward
             result.is_leaf = False
 

@@ -7,6 +7,7 @@ from fiztorch.tensor import Tensor
 from fiztorch.tensor import Tensor
 from fiztorch.nn import Linear, ReLU, Sequential
 import fiztorch.nn.functional as F
+from fiztorch.optim.optimizer import SGD
 
 # Initialize model parameters
 W = Tensor(np.random.randn(2, 3), requires_grad=True)
@@ -21,7 +22,7 @@ optimizer = SGD([W, b], lr=0.1)
 for epoch in range(50):
     # Forward pass
     logits = X @ W + b
-    loss = cross_entropy(logits, y)
+    loss = F.cross_entropy(logits, y)
 
     # Backward pass
     optimizer.zero_grad()
