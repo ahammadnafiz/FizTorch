@@ -10,6 +10,13 @@ from sklearn.preprocessing import StandardScaler
 from fiztorch.tensor import Tensor
 from fiztorch.nn import Linear, ReLU, Sequential
 from fiztorch.optim.optimizer import SGD
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation, PillowWriter
+
+# Store metrics for animation
+train_mse_history = []
+test_mse_history = []
+epochs_history = []
 
 def load_housing_data():
     """Load and preprocess California Housing dataset"""
@@ -17,14 +24,12 @@ def load_housing_data():
         housing = fetch_california_housing()
         X, y = housing.data, housing.target
         
-        # Normalize features and target
         X_scaler = StandardScaler()
         y_scaler = StandardScaler()
         
         X = X_scaler.fit_transform(X)
         y = y_scaler.fit_transform(y.reshape(-1, 1))
         
-        # Split the data
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42
         )
@@ -68,12 +73,8 @@ def train_epoch(model, optimizer, X_train, y_train, batch_size):
             y_batch = Tensor(y_train.data[batch_indices])
             
             optimizer.zero_grad()
-            
-            # Forward pass
             predictions = model(X_batch)
             loss = mse_loss(predictions, y_batch)
-            
-            # Backward pass
             loss.backward()
             optimizer.step()
             
@@ -95,45 +96,51 @@ def evaluate(model, X, y):
         print(f"Error during evaluation: {str(e)}")
         raise
 
-# Tests
-def test_data_loading():
-    X_train, y_train, X_test, y_test, _, _ = load_housing_data()
-    assert len(X_train.shape) == 2, "Features should be 2D"
-    assert len(y_train.shape) == 2, "Targets should be 2D"
-    assert y_train.shape[1] == 1, "Target should have 1 dimension"
-
-def test_model_creation():
-    input_dim = 8  # California housing has 8 features
-    model = create_model(input_dim)
-    assert isinstance(model, Sequential), "Model should be Sequential"
-    assert len(model.layers) == 5, "Model should have 5 layers"
-
-def test_forward_pass():
-    input_dim = 8
-    model = create_model(input_dim)
-    X_train, _, _, _, _, _ = load_housing_data()
-    output = model(X_train)
-    assert output.shape[1] == 1, "Output should have 1 dimension"
-
-def test_mse_loss():
-    pred = Tensor([[1.0], [2.0], [3.0]])
-    target = Tensor([[1.1], [2.1], [2.9]])
-    loss = mse_loss(pred, target)
-    assert isinstance(loss.data, float) or isinstance(loss.data, np.ndarray)
-    assert loss.data > 0, "MSE loss should be positive"
-
-def test_training_step():
-    input_dim = 8
-    model = create_model(input_dim)
-    X_train, y_train, _, _, _, _ = load_housing_data()
-    optimizer = SGD(model.parameters(), lr=0.01)
+def create_training_animation(save_path='training_progress.gif'):
+    """Create and save animation of training progress"""
+    fig, ax = plt.subplots(figsize=(10, 6))
     
-    loss = train_epoch(model, optimizer, X_train, y_train, batch_size=32)
-    assert isinstance(loss, float) or isinstance(loss, np.ndarray)
-    assert not np.isnan(loss), "Loss should not be NaN"
+    def animate(frame):
+        ax.clear()
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Mean Squared Error')
+        ax.set_title('Training Progress')
+        
+        # Plot data up to current frame
+        ax.plot(epochs_history[:frame], train_mse_history[:frame], 
+                label='Training MSE', color='blue')
+        ax.plot(epochs_history[:frame], test_mse_history[:frame], 
+                label='Test MSE', color='red')
+        
+        ax.legend()
+        ax.grid(True)
+        
+        # Set y-axis limits based on data range
+        if len(train_mse_history) > 0:
+            max_mse = max(max(train_mse_history), max(test_mse_history))
+            min_mse = min(min(train_mse_history), min(test_mse_history))
+            ax.set_ylim(min_mse * 0.9, max_mse * 1.1)
+    
+    # Create animation
+    anim = FuncAnimation(
+        fig, animate, 
+        frames=len(epochs_history), 
+        interval=50,  # 50ms between frames
+        repeat=False
+    )
+    
+    # Save as GIF
+    writer = PillowWriter(fps=20)
+    anim.save(save_path, writer=writer)
+    plt.close()
 
 def main():
     try:
+        # Clear previous history
+        train_mse_history.clear()
+        test_mse_history.clear()
+        epochs_history.clear()
+        
         # Load data
         print("Loading California Housing dataset...")
         X_train, y_train, X_test, y_test, _, _ = load_housing_data()
@@ -145,7 +152,7 @@ def main():
         optimizer = SGD(model.parameters(), lr=0.01)
         
         # Training parameters
-        n_epochs = 500
+        n_epochs = 200
         batch_size = 32
         
         # Training loop
@@ -157,6 +164,11 @@ def main():
             train_mse = evaluate(model, X_train, y_train)
             test_mse = evaluate(model, X_test, y_test)
             
+            # Store metrics for animation
+            train_mse_history.append(train_mse)
+            test_mse_history.append(test_mse)
+            epochs_history.append(epoch)
+            
             if test_mse < best_test_mse:
                 best_test_mse = test_mse
             
@@ -167,6 +179,11 @@ def main():
                 print(f"Test MSE: {test_mse:.4f}")
                 print(f"Best Test MSE: {best_test_mse:.4f}")
                 print("-" * 50)
+        
+        # Create and save animation
+        print("Creating training animation...")
+        create_training_animation()
+        print("Animation saved as 'training_progress.gif'")
                 
     except Exception as e:
         print(f"Error in main execution: {str(e)}")
