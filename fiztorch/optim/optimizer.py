@@ -1,4 +1,4 @@
-from typing import Iterator, List, Dict, Optional
+from typing import Iterator, List, Optional
 from ..tensor import Tensor
 import numpy as np
 
