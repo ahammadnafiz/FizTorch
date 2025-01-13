@@ -99,3 +99,70 @@ class ReLU(Module):
             result._grad_fn = _backward
             result.is_leaf = False
         return result
+
+class Sigmoid(Module):
+    """
+    Applies the sigmoid activation function element-wise: Sigmoid(x) = 1 / (1 + exp(-x))
+    """
+    def forward(self, x):
+        """
+        Forward pass for the sigmoid activation function.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor where each element is the result of applying sigmoid to the corresponding element of the input tensor.
+        """
+        if not isinstance(x, Tensor):
+            x = Tensor(x, requires_grad=True)
+
+        # Apply sigmoid activation function
+        data = 1 / (1 + np.exp(-x.data))
+        result = Tensor(data, requires_grad=x.requires_grad)
+
+        if x.requires_grad:
+            # Define the backward function for gradient computation
+            def _backward(gradient):
+                grad = gradient.data * data * (1 - data)
+                x.backward(Tensor(grad, requires_grad=x.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        return result
+
+class Softmax(Module):
+    """
+    Applies the softmax activation function to the input tensor along the specified axis.
+    """
+    def __init__(self, axis=-1):
+        super().__init__()
+        self.axis = axis
+
+    def forward(self, x):
+        """
+        Forward pass for the softmax activation function.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor where softmax is applied along the specified axis.
+        """
+        if not isinstance(x, Tensor):
+            x = Tensor(x, requires_grad=True)
+
+        # Apply softmax activation function
+        exp_data = np.exp(x.data - np.max(x.data, axis=self.axis, keepdims=True))
+        data = exp_data / np.sum(exp_data, axis=self.axis, keepdims=True)
+        result = Tensor(data, requires_grad=x.requires_grad)
+
+        if x.requires_grad:
+            # Define the backward function for gradient computation
+            def _backward(gradient):
+                s = data.reshape(-1, 1)
+                jacobian = np.diagflat(s) - np.outer(s, s)
+                grad = gradient.data @ jacobian
+                x.backward(Tensor(grad, requires_grad=x.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        return result

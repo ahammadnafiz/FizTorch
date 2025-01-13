@@ -89,7 +89,7 @@ def create_model():
             ReLU(),
             Linear(128, 64),
             ReLU(),
-            Linear(64, 10)
+            Linear(64, 10),
         )
         return model
     except Exception as e:
