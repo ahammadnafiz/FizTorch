@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Iterator, Tuple, List
+from typing import Iterator, Tuple
 
 class DataLoader:
     def __init__(self, data: np.ndarray, labels: np.ndarray, batch_size: int = 32, shuffle: bool = True):

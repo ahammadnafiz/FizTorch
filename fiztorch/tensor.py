@@ -1,29 +1,7 @@
-import numpy as np
 from typing import Union, Optional
+import numpy as np
+from fiztorch.utils.broadcast import GradientUtils as _GradientUtils
 
-def _unbroadcast(grad, shape):
-    """
-    Unbroadcast gradients to match the original tensor shape.
-
-    Parameters:
-    grad (np.ndarray): The gradient array to be unbroadcasted.
-    shape (tuple): The target shape to unbroadcast to.
-
-    Returns:
-    np.ndarray: The unbroadcasted gradient.
-    """
-    # Handle scalars
-    if not shape:
-        return np.sum(grad)
-        
-    # Sum out the broadcasted dimensions
-    axes = tuple(range(len(grad.shape) - len(shape)))  # Leading dimensions
-    for i, (grad_size, shape_size) in enumerate(zip(grad.shape[len(axes):], shape)):
-        if grad_size != shape_size:
-            axes += (i + len(axes),)
-    if axes:
-        return np.sum(grad, axis=axes).reshape(shape)
-    return grad
 
 class Tensor:
     def __init__(self, data: Union[np.ndarray, list, float], requires_grad: bool = False):
@@ -110,10 +88,10 @@ class Tensor:
         if result.requires_grad:
             def _backward(gradient):
                 if self.requires_grad:
-                    unbroadcast_grad = _unbroadcast(gradient.data, self.data.shape)
+                    unbroadcast_grad = _GradientUtils._unbroadcast(gradient.data, self.data.shape)
                     self.backward(unbroadcast_grad)
                 if isinstance(other, Tensor) and other.requires_grad:
-                    unbroadcast_grad = _unbroadcast(gradient.data, other.data.shape)
+                    unbroadcast_grad = _GradientUtils._unbroadcast(gradient.data, other.data.shape)
                     other.backward(unbroadcast_grad)
             result._grad_fn = _backward
             result.is_leaf = False
@@ -138,11 +116,11 @@ class Tensor:
             def _backward(gradient):
                 if self.requires_grad:
                     grad = gradient.data * other_data
-                    unbroadcast_grad = _unbroadcast(grad, self.data.shape)
+                    unbroadcast_grad = _GradientUtils._unbroadcast(grad, self.data.shape)
                     self.backward(Tensor(unbroadcast_grad))
                 if isinstance(other, Tensor) and other.requires_grad:
                     grad = gradient.data * self.data
-                    unbroadcast_grad = _unbroadcast(grad, other.data.shape)
+                    unbroadcast_grad = _GradientUtils._unbroadcast(grad, other.data.shape)
                     other.backward(Tensor(unbroadcast_grad))
             result._grad_fn = _backward
             result.is_leaf = False
