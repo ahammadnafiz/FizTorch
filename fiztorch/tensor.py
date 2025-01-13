@@ -26,6 +26,14 @@ class Tensor:
     def shape(self):
         """Return the shape of the underlying numpy array"""
         return self.data.shape
+    
+    def to_float32(self) -> 'Tensor':
+        """Convert tensor to float32 dtype"""
+        return Tensor(self.data.astype(np.float32), requires_grad=self.requires_grad)
+
+    def to_float64(self) -> 'Tensor':
+        """Convert tensor to float64 dtype"""
+        return Tensor(self.data.astype(np.float64), requires_grad=self.requires_grad)
 
     @property
     def T(self):
@@ -298,6 +306,40 @@ class Tensor:
             result.is_leaf = False
 
         return result
+    
+    def log(self) -> 'Tensor':
+        """
+        Compute the natural logarithm of each element in the tensor.
+        
+        Returns:
+        Tensor: The result of the logarithm computation.
+        """
+        result = Tensor(np.log(self.data), requires_grad=self.requires_grad)
+        
+        if self.requires_grad:
+            def _backward(gradient):
+                grad = gradient.data / self.data
+                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        
+        return result
+    
+    def clip_grad_(self, min_val: float = None, max_val: float = None) -> None:
+        """
+        Clip gradients to a specified range in-place.
+        
+        Parameters:
+        min_val (float, optional): Minimum value for the gradient
+        max_val (float, optional): Maximum value for the gradient
+        """
+        if self.grad is not None:
+            if min_val is not None:
+                self.grad.data = np.maximum(self.grad.data, min_val)
+            if max_val is not None:
+                self.grad.data = np.minimum(self.grad.data, max_val)
+
+    
 
     def __repr__(self) -> str:
         """Return a string representation of the tensor"""
