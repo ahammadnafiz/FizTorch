@@ -1,47 +1,39 @@
 import sys
 import os
-import numpy as np
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fiztorch.nn.layers import Linear, ReLU, Sigmoid, LeakyReLU
-from fiztorch.nn.sequential import Sequential
-from fiztorch.tensor import Tensor
+import pytest
+import numpy as np
+from fiztorch import Tensor
+from fiztorch.nn import Linear, ReLU, Sequential
+from fiztorch.optim.optimizer import SGD
+import fiztorch.nn.functional as F
+
+# Define a neural network
+model = Sequential(
+    Linear(2, 3),
+    ReLU(),
+    Linear(3, 1)
+)
+
+# Create some input data
+input = Tensor([[1.0, 2.0]], requires_grad=True)
+
+# Example of training a model
+def train_example():
+    optimizer = SGD(model.parameters(), lr=0.01)
+
+    # Dummy data for demonstration
+    X_train = Tensor(np.random.rand(100, 2), requires_grad=True)
+    y_train = Tensor(np.random.rand(100, 1))
+
+    for epoch in range(5):  # Simulate 5 epochs of training
+        optimizer.zero_grad()
+        predictions = model(X_train)
+        loss = F.mse_loss(predictions, y_train)
+        loss.backward()
+        optimizer.step()
+        print(f"Epoch {epoch+1}, Loss: {loss.data}")
 
 if __name__ == "__main__":
-    # Define dimensions
-    input_dim = 5  # Number of input features
-    hidden_dim = 10  # Number of neurons in the hidden layer
-    output_dim = 3  # Number of output classes
-
-    # Define a simple neural network
-    model = Sequential(
-        Linear(input_dim, hidden_dim),  # First layer
-        LeakyReLU(negative_slope=0.1),  # LeakyReLU for hidden layer
-        Linear(hidden_dim, output_dim),  # Second layer
-        Sigmoid()                        # Output layer with Sigmoid
-    )
-
-    # Generate random input data
-    batch_size = 2
-    x = Tensor(np.random.rand(batch_size, input_dim), requires_grad=True)
-
-    # Forward pass
-    print("=== Forward Pass ===")
-    output = model(x)
-    print("Output:", output)
-
-    # Compute dummy loss (mean of the output)
-    loss = output.mean()
-    print("\n=== Loss ===")
-    print("Loss:", loss)
-
-    # Backward pass: compute gradients
-    print("\n=== Backward Pass ===")
-    loss.backward()
-
-    # Check gradients
-    print("\n=== Gradients ===")
-    for idx, param in enumerate(model.parameters()):
-        print(f"Parameter {idx}:")
-        print(f"Data:\n{param.data}")
-        print(f"Gradient:\n{param.grad}\n")
+    train_example()

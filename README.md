@@ -17,6 +17,7 @@ FizTorch is a lightweight deep learning framework designed for educational purpo
 - [Examples](#examples)
 - [Contributing](#contributing)
 - [License](#license)
+- [Roadmap](#roadmap)
 
 ## Features
 
@@ -56,12 +57,18 @@ To install FizTorch, follow these steps:
 Here is a simple example of how to use FizTorch to build and train a neural network:
 
 ```python
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import pytest
 import numpy as np
-from fiztorch.tensor import Tensor
+from fiztorch import Tensor
 from fiztorch.nn import Linear, ReLU, Sequential
+from fiztorch.optim.optimizer import SGD
 import fiztorch.nn.functional as F
 
-# Define a simple neural network
+# Define a neural network
 model = Sequential(
     Linear(2, 3),
     ReLU(),
@@ -71,14 +78,24 @@ model = Sequential(
 # Create some input data
 input = Tensor([[1.0, 2.0]], requires_grad=True)
 
-# Forward pass
-output = model(input)
+# Example of training a model
+def train_example():
+    optimizer = SGD(model.parameters(), lr=0.01)
 
-# Backward pass
-output.backward()
+    # Dummy data for demonstration
+    X_train = Tensor(np.random.rand(100, 2), requires_grad=True)
+    y_train = Tensor(np.random.rand(100, 1))
 
-# Print the gradients
-print(input.grad)
+    for epoch in range(5):  # Simulate 5 epochs of training
+        optimizer.zero_grad()
+        predictions = model(X_train)
+        loss = F.mse_loss(predictions, y_train)
+        loss.backward()
+        optimizer.step()
+        print(f"Epoch {epoch+1}, Loss: {loss.data}")
+
+if __name__ == "__main__":
+    train_example()
 ```
 
 ## Examples
@@ -152,6 +169,41 @@ output = model(input)
 # Print the output
 print(output)
 ```
+
+## Roadmap
+
+### Phase 1: Core Features
+
+- Enhance tensor operations with more advanced functionalities (e.g., broadcasting).
+- Add support for GPU acceleration (e.g., via CUDA or ROCm).
+- Improve the API for ease of use and consistency.
+
+### Phase 2: Neural Network Enhancements
+
+- Add additional layers such as Convolutional, Dropout, and BatchNorm.
+- Expand activation functions (e.g.,ELU).
+- Integrate pre-trained models for common tasks.
+
+### Phase 3: Training and Optimization
+
+- Implement additional optimizers
+- Add learning rate schedulers.
+- Enhance support for custom loss functions.
+
+### Phase 4: Dataset and Data Loading
+
+- Provide built-in dataset utilities (e.g., MNIST, CIFAR).
+- Create a flexible data loader with augmentation capabilities.
+
+### Phase 5: Visualization and Monitoring
+
+- Add utilities for loss/accuracy visualization.
+- Integrate real-time training monitoring (e.g., TensorBoard support).
+
+### Phase 6: Community Contributions
+
+- Establish guidelines for community-driven feature additions.
+- Host challenges to encourage usage and development.
 
 ## Contributing
 
