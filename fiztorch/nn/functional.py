@@ -15,46 +15,52 @@ class ReLU(Activation):
     """Rectified Linear Unit activation function."""
     
     def __call__(self, input: Tensor) -> Tensor:
-        """
-        Apply ReLU activation: f(x) = max(0, x)
+        output_data = np.maximum(0, input.data)
+        result = Tensor(output_data, requires_grad=input.requires_grad)
         
-        Args:
-            input: Input tensor
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = gradient.data * (input.data > 0).astype(np.float64)
+                input.backward(Tensor(grad))
             
-        Returns:
-            Tensor with ReLU activation applied
-        """
-        return Tensor(np.maximum(0, input.data), requires_grad=input.requires_grad)
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
 
 class Sigmoid(Activation):
     """Sigmoid activation function."""
     
     def __call__(self, input: Tensor) -> Tensor:
-        """
-        Apply sigmoid activation: f(x) = 1 / (1 + exp(-x))
-        
-        Args:
-            input: Input tensor
+        sigmoid_data = 1 / (1 + np.exp(-input.data))
+        result = Tensor(sigmoid_data, requires_grad=input.requires_grad)
+
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = gradient.data * sigmoid_data * (1 - sigmoid_data)
+                input.backward(Tensor(grad))
             
-        Returns:
-            Tensor with sigmoid activation applied
-        """
-        return Tensor(1 / (1 + np.exp(-input.data)), requires_grad=input.requires_grad)
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
 
 class Tanh(Activation):
     """Hyperbolic tangent activation function."""
     
     def __call__(self, input: Tensor) -> Tensor:
-        """
-        Apply tanh activation: f(x) = tanh(x)
-        
-        Args:
-            input: Input tensor
+        tanh_data = np.tanh(input.data)
+        result = Tensor(tanh_data, requires_grad=input.requires_grad)
+
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = gradient.data * (1 - tanh_data ** 2)
+                input.backward(Tensor(grad))
             
-        Returns:
-            Tensor with tanh activation applied
-        """
-        return Tensor(np.tanh(input.data), requires_grad=input.requires_grad)
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
 
 class Softmax(Activation):
     """Softmax activation function."""
@@ -69,15 +75,6 @@ class Softmax(Activation):
         self.dim = dim
     
     def __call__(self, input: Tensor) -> Tensor:
-        """
-        Apply softmax activation with proper gradient computation.
-        
-        Args:
-            input: Input tensor
-            
-        Returns:
-            Tensor with softmax activation applied
-        """
         max_val = np.max(input.data, axis=self.dim, keepdims=True)
         exp_x = np.exp(input.data - max_val)
         softmax_output = exp_x / np.sum(exp_x, axis=self.dim, keepdims=True)

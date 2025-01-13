@@ -19,11 +19,11 @@ grads = []
 # Compute each activation and its gradient
 for activation in activations:
     if activation == "ReLU":
-        result = x.relu()
+        result = relu(x)
     elif activation == "Sigmoid":
-        result = x.sigmoid()
+        result = sigmoid(x)
     elif activation == "Tanh":
-        result = x.tanh()
+        result = tanh(x)
     
     # Backward with dummy gradient
     result.backward(Tensor(np.ones_like(result.data)))
