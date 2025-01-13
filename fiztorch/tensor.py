@@ -2,7 +2,6 @@ from typing import Union, Optional
 import numpy as np
 from fiztorch.utils.broadcast import GradientUtils as _GradientUtils
 
-
 class Tensor:
     def __init__(self, data: Union[np.ndarray, list, float], requires_grad: bool = False):
         """
@@ -96,10 +95,10 @@ class Tensor:
         if result.requires_grad:
             def _backward(gradient):
                 if self.requires_grad:
-                    unbroadcast_grad = _GradientUtils._unbroadcast(gradient.data, self.data.shape)
+                    unbroadcast_grad = _GradientUtils.unbroadcast(gradient.data, self.data.shape)
                     self.backward(unbroadcast_grad)
                 if isinstance(other, Tensor) and other.requires_grad:
-                    unbroadcast_grad = _GradientUtils._unbroadcast(gradient.data, other.data.shape)
+                    unbroadcast_grad = _GradientUtils.unbroadcast(gradient.data, other.data.shape)
                     other.backward(unbroadcast_grad)
             result._grad_fn = _backward
             result.is_leaf = False
@@ -124,11 +123,11 @@ class Tensor:
             def _backward(gradient):
                 if self.requires_grad:
                     grad = gradient.data * other_data
-                    unbroadcast_grad = _GradientUtils._unbroadcast(grad, self.data.shape)
+                    unbroadcast_grad = _GradientUtils.unbroadcast(grad, self.data.shape)
                     self.backward(Tensor(unbroadcast_grad))
                 if isinstance(other, Tensor) and other.requires_grad:
                     grad = gradient.data * self.data
-                    unbroadcast_grad = _GradientUtils._unbroadcast(grad, other.data.shape)
+                    unbroadcast_grad = _GradientUtils.unbroadcast(grad, other.data.shape)
                     other.backward(Tensor(unbroadcast_grad))
             result._grad_fn = _backward
             result.is_leaf = False

@@ -35,6 +35,11 @@ class Linear(Module):
         else:
             self.bias = None
 
+        print(f"Weight initialized: {self.weight}")
+        if bias:
+            print(f"Bias initialized: {self.bias}")
+
+
     def forward(self, x):
         """
         Forward pass for the linear layer.
@@ -95,6 +100,45 @@ class ReLU(Module):
             # Define the backward function for gradient computation
             def _backward(gradient):
                 grad = gradient.data * (x.data > 0)
+                x.backward(Tensor(grad, requires_grad=x.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        return result
+
+class LeakyReLU(Module):
+    """
+    Applies the Leaky Rectified Linear Unit function element-wise: LeakyReLU(x) = x if x > 0 else alpha * x
+    """
+    def __init__(self, negative_slope: float = 0.01):
+        """
+        Initialize LeakyReLU.
+
+        Args:
+            negative_slope (float): Slope for negative inputs. Default: 0.01.
+        """
+        super().__init__()
+        self.negative_slope = negative_slope
+
+    def forward(self, x):
+        """
+        Forward pass for the LeakyReLU activation function.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor where each element is the result of applying LeakyReLU to the corresponding element of the input tensor.
+        """
+        if not isinstance(x, Tensor):
+            x = Tensor(x, requires_grad=True)
+
+        # Apply LeakyReLU activation function
+        result = Tensor(np.where(x.data > 0, x.data, self.negative_slope * x.data), requires_grad=x.requires_grad)
+
+        if x.requires_grad:
+            # Define the backward function for gradient computation
+            def _backward(gradient):
+                grad = np.where(x.data > 0, gradient.data, self.negative_slope * gradient.data)
                 x.backward(Tensor(grad, requires_grad=x.requires_grad))
             result._grad_fn = _backward
             result.is_leaf = False

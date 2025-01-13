@@ -27,6 +27,34 @@ class ReLU(Activation):
             result.is_leaf = False
 
         return result
+    
+class LeakyReLU(Activation):
+    """
+    Leaky ReLU activation function: LeakyReLU(x) = x if x > 0 else alpha * x
+    """
+    def __init__(self, negative_slope: float = 0.01):
+        """
+        Initialize LeakyReLU.
+
+        Args:
+            negative_slope (float): Slope for negative inputs. Default: 0.01.
+        """
+        self.negative_slope = negative_slope
+
+    def __call__(self, input: Tensor) -> Tensor:
+        output_data = np.where(input.data > 0, input.data, self.negative_slope * input.data)
+        result = Tensor(output_data, requires_grad=input.requires_grad)
+
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = np.where(input.data > 0, gradient.data, self.negative_slope * gradient.data)
+                input.backward(Tensor(grad))
+            
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
+
 
 class Sigmoid(Activation):
     """Sigmoid activation function."""
