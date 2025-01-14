@@ -13,7 +13,8 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import matplotlib.gridspec as gridspec
 
 from fiztorch.tensor import Tensor
-from fiztorch.nn import Linear, ReLU, Sequential
+from fiztorch.nn.layers import Linear, ReLU, Dropout, BatchNorm
+from fiztorch.nn.sequential import Sequential
 import fiztorch.nn.functional as F
 import fiztorch.optim.optimizer as opt
 
@@ -87,8 +88,11 @@ def create_model():
         model = Sequential(
             Linear(64, 128),
             ReLU(),
+            # Dropout(0.5),
             Linear(128, 64),
             ReLU(),
+            # BatchNorm(64),
+            # Dropout(0.5),
             Linear(64, 10),
         )
         return model
@@ -228,7 +232,7 @@ def main():
         optimizer = opt.Adam(model.parameters(), lr=0.001)
 
         # Training parameters
-        n_epochs = 2000  # Reduced for clarity of output
+        n_epochs = 500  # Reduced for clarity of output
         batch_size = 32
 
         train_losses = []

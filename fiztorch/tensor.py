@@ -26,6 +26,55 @@ class Tensor:
         """Return the shape of the underlying numpy array"""
         return self.data.shape
     
+    def __len__(self) -> int:
+        """
+        Return the length of the first dimension of the tensor.
+        This allows using len() on tensor objects, which is particularly useful
+        when working with batches of data or sequences.
+        
+        Returns:
+        int: The size of the first dimension of the tensor
+        """
+        return self.data.shape[0]
+    
+    def __getitem__(self, idx) -> 'Tensor':
+        """
+        Enable tensor indexing and slicing, maintaining autograd functionality.
+        Supports integer indexing, slicing, and advanced indexing similar to NumPy.
+        
+        Parameters:
+        idx: Index, slice, or advanced indexing expression
+        
+        Returns:
+        Tensor: A new tensor containing the indexed/sliced data
+        """
+        result = Tensor(self.data[idx], requires_grad=self.requires_grad)
+        
+        if self.requires_grad:
+            def _backward(gradient):
+                # Create a gradient array of the same shape as the original data
+                grad = np.zeros_like(self.data)
+                # Place the gradient in the correct position using the same indexing
+                grad[idx] = gradient.data
+                self.backward(Tensor(grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+            
+        return result
+        
+    def __setitem__(self, idx, value):
+        """
+        Enable setting values through indexing, maintaining autograd functionality.
+        
+        Parameters:
+        idx: Index or slice where to set values
+        value: Value(s) to set at the specified indices
+        """
+        if isinstance(value, Tensor):
+            self.data[idx] = value.data
+        else:
+            self.data[idx] = np.array(value, dtype=self.data.dtype)
+    
     def to_float32(self) -> 'Tensor':
         """Convert tensor to float32 dtype"""
         return Tensor(self.data.astype(np.float32), requires_grad=self.requires_grad)

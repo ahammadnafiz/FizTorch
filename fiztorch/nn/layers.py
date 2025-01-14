@@ -1,7 +1,8 @@
+from typing import Optional
 import numpy as np
 from ..tensor import Tensor
 from .module import Module
-from .init_functions import xavier_uniform_, zeros_
+from .init_functions import xavier_uniform_, ones_, zeros_
 
 class Linear(Module):
     """
@@ -35,9 +36,9 @@ class Linear(Module):
         else:
             self.bias = None
 
-        print(f"Weight initialized: {self.weight}")
-        if bias:
-            print(f"Bias initialized: {self.bias}")
+        # print(f"Weight initialized: {self.weight}")
+        # if bias:
+        #     print(f"Bias initialized: {self.bias}")
 
 
     def forward(self, x):
@@ -209,4 +210,76 @@ class Softmax(Module):
                 x.backward(Tensor(grad, requires_grad=x.requires_grad))
             result._grad_fn = _backward
             result.is_leaf = False
+        return result
+    
+class Dropout(Module):
+    """
+    Dropout layer that randomly zeroes some of the elements of the input tensor
+    with probability p during training.
+
+    Args:
+        p (float): Probability of setting a value to zero. Default: 0.5.
+    """
+    def __init__(self, p: float = 0.5):
+        super().__init__()
+        self.p = p
+
+    def forward(self, input: Tensor) -> Tensor:
+        if self.training:
+            mask = np.random.binomial(1, 1 - self.p, input.shape)
+            return input * mask / (1 - self.p)
+        return input
+    
+class BatchNorm(Module):
+    """
+    Batch Normalization layer to normalize the input and stabilize training.
+
+    Args:
+        num_features (int): Number of features in the input.
+        eps (float): A small value to avoid division by zero. Default: 1e-5.
+        momentum (float): Momentum for the moving average. Default: 0.1.
+    """
+    def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1):
+        super().__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+
+        self.gamma = Tensor(np.ones(num_features), requires_grad=True)
+        self.beta = Tensor(np.zeros(num_features), requires_grad=True)
+
+        self.running_mean = np.zeros(num_features)
+        self.running_var = np.ones(num_features)
+
+    def forward(self, input: Tensor) -> Tensor:
+        if self.training:
+            batch_mean = np.mean(input.data, axis=0)
+            batch_var = np.var(input.data, axis=0)
+
+            self.running_mean = self.momentum * self.running_mean + (1 - self.momentum) * batch_mean
+            self.running_var = self.momentum * self.running_var + (1 - self.momentum) * batch_var
+
+            normalized = (input.data - batch_mean) / np.sqrt(batch_var + self.eps)
+        else:
+            normalized = (input.data - self.running_mean) / np.sqrt(self.running_var + self.eps)
+
+        output = self.gamma.data * normalized + self.beta.data
+        result = Tensor(output, requires_grad=input.requires_grad)
+
+        if input.requires_grad:
+            def _backward(gradient: Tensor):
+                grad_gamma = np.sum(gradient.data * normalized, axis=0)
+                grad_beta = np.sum(gradient.data, axis=0)
+
+                self.gamma.backward(Tensor(grad_gamma))
+                self.beta.backward(Tensor(grad_beta))
+
+                if input.requires_grad:
+                    grad_input = (1 / np.sqrt(batch_var + self.eps)) * (
+                        gradient.data - np.mean(gradient.data, axis=0) - normalized * np.mean(gradient.data * normalized, axis=0))
+                    input.backward(Tensor(grad_input))
+
+            result._grad_fn = _backward
+            result.is_leaf = False
+
         return result
