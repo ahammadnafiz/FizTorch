@@ -323,6 +323,24 @@ class Tensor:
             result.is_leaf = False
         
         return result
+
+    def sin(self) -> 'Tensor':
+        """
+        Compute the sine of each element in the tensor.
+
+        Returns:
+        Tensor: The result of the sine computation.
+        """
+        result = Tensor(np.sin(self.data), requires_grad=self.requires_grad)
+
+        if self.requires_grad:
+            def _backward(gradient):
+                grad = gradient.data * np.cos(self.data)
+                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
     
     def clip_grad_(self, min_val: float = None, max_val: float = None) -> None:
         """
@@ -337,8 +355,6 @@ class Tensor:
                 self.grad.data = np.maximum(self.grad.data, min_val)
             if max_val is not None:
                 self.grad.data = np.minimum(self.grad.data, max_val)
-
-    
 
     def __repr__(self) -> str:
         """Return a string representation of the tensor"""

@@ -96,7 +96,25 @@ def create_model():
         print(f"Error creating model: {str(e)}")
         raise
 
-def train_epoch(model, optimizer, X_train, y_train, batch_size):
+def print_parameter_gradients(model, epoch):
+    """
+    Print gradients for all parameters in the model
+    """
+    print(f"\nEpoch {epoch + 1} Parameter Gradients:")
+    for idx, layer in enumerate(model.layers):
+        if hasattr(layer, '_parameters'):
+            for param_name, param in layer._parameters.items():
+                if param.grad is not None:
+                    grad_stats = {
+                        'mean': float(param.grad.data.mean()),
+                        'std': float(param.grad.data.std()),
+                        'max': float(param.grad.data.max()),
+                        'min': float(param.grad.data.min())
+                    }
+                    print(f"Layer {idx} - {param_name}:")
+                    print(f"  Gradient stats: {grad_stats}")
+
+def train_epoch(model, optimizer, X_train, y_train, batch_size, epoch):
     try:
         indices = np.random.permutation(len(X_train.data))
         total_loss = 0
@@ -115,6 +133,11 @@ def train_epoch(model, optimizer, X_train, y_train, batch_size):
 
             # Backward pass
             loss.backward()
+            
+            # Print gradients for the last batch of each epoch
+            if i + batch_size >= len(X_train.data):
+                print_parameter_gradients(model, epoch)
+                
             optimizer.step()
 
             total_loss += loss.data
@@ -205,7 +228,7 @@ def main():
         optimizer = opt.Adam(model.parameters(), lr=0.001)
 
         # Training parameters
-        n_epochs = 500
+        n_epochs = 2000  # Reduced for clarity of output
         batch_size = 32
 
         train_losses = []
@@ -215,7 +238,7 @@ def main():
         # Training loop
         print("Training started...")
         for epoch in range(n_epochs):
-            avg_loss = train_epoch(model, optimizer, X_train, y_train, batch_size)
+            avg_loss = train_epoch(model, optimizer, X_train, y_train, batch_size, epoch)
             train_acc = evaluate(model, X_train, y_train)
             test_acc = evaluate(model, X_test, y_test)
 
@@ -223,17 +246,13 @@ def main():
             train_accuracies.append(train_acc)
             test_accuracies.append(test_acc)
 
-            if (epoch + 1) % 5 == 0:
-                print(f"Epoch {epoch + 1}")
-                print(f"Average Loss: {avg_loss:.4f}")
-                print(f"Training Accuracy: {train_acc:.4f}")
-                print(f"Test Accuracy: {test_acc:.4f}")
-                print("-" * 50)
+            print(f"Epoch {epoch + 1}")
+            print(f"Average Loss: {avg_loss:.4f}")
+            print(f"Training Accuracy: {train_acc:.4f}")
+            print(f"Test Accuracy: {test_acc:.4f}")
+            print("-" * 50)
 
-        # Create and save the training animation
-        print("Creating training progress animation...")
         # create_training_animation(train_losses, train_accuracies, test_accuracies)
-        print("Animation saved as 'training_progress.gif'")
 
     except Exception as e:
         print(f"Error in main execution: {str(e)}")
