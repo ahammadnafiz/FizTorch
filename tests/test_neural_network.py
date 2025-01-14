@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 from fiztorch import Tensor
-from fiztorch.nn import Linear, ReLU, Sequential
+from fiztorch.nn.layers import Linear, ReLU, Sequential
 from fiztorch.optim.optimizer import SGD
 import fiztorch.nn.functional as F
 
@@ -149,7 +149,7 @@ def train_example(epochs=1000, batch_size=32, learning_rate=0.01):
             
             optimizer.zero_grad()
             predictions = model(batch_X)
-            loss = F.mse_loss(predictions, batch_y)
+            loss = F.binary_cross_entropy(predictions, batch_y)
             loss.backward()
             optimizer.step()
             

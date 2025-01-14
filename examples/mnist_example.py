@@ -13,7 +13,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import matplotlib.gridspec as gridspec
 
 from fiztorch.tensor import Tensor
-from fiztorch.nn.layers import Linear, ReLU, Dropout, BatchNorm
+from fiztorch.nn.layers import Linear, ReLU
 from fiztorch.nn.sequential import Sequential
 import fiztorch.nn.functional as F
 import fiztorch.optim.optimizer as opt
@@ -88,11 +88,8 @@ def create_model():
         model = Sequential(
             Linear(64, 128),
             ReLU(),
-            # Dropout(0.5),
             Linear(128, 64),
             ReLU(),
-            # BatchNorm(64),
-            # Dropout(0.5),
             Linear(64, 10),
         )
         return model

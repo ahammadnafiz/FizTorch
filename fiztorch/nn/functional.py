@@ -203,6 +203,77 @@ class CrossEntropyLoss(Loss):
             result.is_leaf = False
         
         return result
+    
+class BCELoss(Loss):
+    """Binary Cross Entropy loss function with built-in sigmoid activation."""
+    
+    def __call__(self, input: Tensor, target: Tensor,
+                 reduction: Literal['mean', 'sum', 'none'] = 'mean') -> Tensor:
+        """
+        Compute binary cross entropy loss with integrated sigmoid.
+        
+        Args:
+            input: Raw logits from the model (batch_size,) or (batch_size, 1)
+            target: Target values in range [0,1] with same shape as input
+            reduction: Type of reduction to apply
+            
+        Returns:
+            Loss tensor
+        """
+        # Ensure input and target have same shape
+        input_data = input.data.reshape(-1)
+        target_data = target.data.reshape(-1)
+        
+        if input_data.shape != target_data.shape:
+            raise ValueError(f"Target shape {target.data.shape} must match input shape {input.data.shape}")
+            
+        # Apply sigmoid with numerical stability
+        x = input_data
+        x_safe = x * (x >= 0) - x * (x < 0)
+        exp_x = np.exp(x_safe)
+        
+        # Compute sigmoid
+        sigmoid_x = np.where(x >= 0, 
+                           exp_x / (1 + exp_x),
+                           1 / (1 + np.exp(-x_safe)))
+        
+        # Clip values for numerical stability
+        eps = 1e-12
+        sigmoid_x = np.clip(sigmoid_x, eps, 1 - eps)
+        
+        # Compute binary cross entropy
+        bce = -target_data * np.log(sigmoid_x) - (1 - target_data) * np.log(1 - sigmoid_x)
+        
+        # Apply reduction
+        if reduction == 'mean':
+            loss_value = np.mean(bce)
+        elif reduction == 'sum':
+            loss_value = np.sum(bce)
+        else:  # 'none'
+            loss_value = bce
+            
+        result = Tensor(loss_value, requires_grad=input.requires_grad)
+        
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = (sigmoid_x - target_data)
+                
+                if reduction == 'mean':
+                    grad = grad / len(grad)
+                    
+                if not np.isscalar(gradient.data):
+                    grad = grad * gradient.data
+                else:
+                    grad = grad * gradient.data
+                    
+                # Reshape grad back to original input shape
+                grad = grad.reshape(input.data.shape)
+                input.backward(Tensor(grad))
+                
+            result._grad_fn = _backward
+            result.is_leaf = False
+            
+        return result
 
 # Convenience functions for direct use
 def relu(input: Tensor) -> Tensor:
@@ -230,3 +301,8 @@ def cross_entropy(input: Tensor, target: Tensor,
                  reduction: Literal['mean', 'sum', 'none'] = 'mean') -> Tensor:
     """Convenience function for Cross Entropy loss."""
     return CrossEntropyLoss()(input, target, reduction)
+
+def binary_cross_entropy(input: Tensor, target: Tensor,
+                        reduction: Literal['mean', 'sum', 'none'] = 'mean') -> Tensor:
+    """Convenience function for Binary Cross Entropy loss."""
+    return BCELoss()(input, target, reduction)
