@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple
+from typing import Union, Tuple
 import numpy as np
 from ..tensor import Tensor
 from .module import Module

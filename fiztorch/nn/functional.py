@@ -1,7 +1,15 @@
 from typing import Literal
 from ..tensor import Tensor
-from .activations import ReLU, LeakyReLU, Sigmoid, Tanh, Softmax
-from .losses import MSELoss, CrossEntropyLoss, BCELoss
+from .activations import (
+    ReLU, 
+    LeakyReLU, 
+    Sigmoid, 
+    Tanh, 
+    Softmax)
+from .losses import (
+    MSELoss, 
+    CrossEntropyLoss, 
+    BCELoss)
 
 # Convenience functions for direct use
 def relu(input: Tensor) -> Tensor:
