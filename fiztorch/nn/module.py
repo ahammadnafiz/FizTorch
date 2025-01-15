@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Tuple
+from typing import Dict, Iterator
 from ..tensor import Tensor
 
 class Module:

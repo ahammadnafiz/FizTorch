@@ -41,3 +41,9 @@ def _calculate_fan_in_and_fan_out(tensor: Tensor) -> tuple:
     else:
         raise ValueError("Only 2D tensors supported for now")
     return fan_in, fan_out
+
+def kaiming_uniform_(tensor: Tensor) -> Tensor:
+    """Fills the tensor with values using Kaiming uniform initialization."""
+    fan_in, _ = _calculate_fan_in_and_fan_out(tensor)
+    bound = np.sqrt(6. / fan_in)
+    return uniform_(tensor, -bound, bound)
