@@ -6,7 +6,7 @@ import numpy as np
 from fiztorch import Tensor
 from fiztorch.nn.layers import Linear, ReLU
 from fiztorch.nn.sequential import Sequential
-from fiztorch.optim.optimizer import SGD
+from fiztorch.optim.optimizer import SGD, Adam
 import fiztorch.nn.functional as F
 
 def generate_synthetic_data(n_samples=1000, noise_level=0.1):
@@ -132,7 +132,7 @@ def train_example(epochs=1000, batch_size=32, learning_rate=0.01):
     y_val = Tensor(y_val)
     
     # Initialize optimizer
-    optimizer = SGD(model.parameters(), lr=learning_rate)
+    optimizer = Adam(model.parameters(), lr=learning_rate)
     
     n_samples = len(X_train)
     n_batches = (n_samples + batch_size - 1) // batch_size
