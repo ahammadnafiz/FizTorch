@@ -1,10 +1,23 @@
 
 # FizTorch: A Toy Tensor Library for Machine Learning
 
+<div align="center">
+
 ![Logo](assets/fiztorch.png)
+
+⭐️ Star us on GitHub — it motivates us a lot! ⭐️
+
+🔥 A Minimal Deep Learning Framework 🔥
+
 [![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://travis-ci.org/yourusername/FizTorch)
+[![Stars](https://img.shields.io/github/stars/ahammadnafiz/FizTorch?style=social)](https://github.com/ahammadnafiz/FizTorch/stargazers)
+
+📊 🔢 🧮 🤖 📈
+
+</div>
+
 
 
 FizTorch is a lightweight deep learning framework designed for educational purposes and small-scale projects. It provides a simple and intuitive API for building and training neural networks, inspired by popular frameworks like PyTorch.
@@ -57,45 +70,49 @@ To install FizTorch, follow these steps:
 Here is a simple example of how to use FizTorch to build and train a neural network:
 
 ```python
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import pytest
 import numpy as np
-from fiztorch import Tensor
-from fiztorch.nn import Linear, ReLU, Sequential
-from fiztorch.optim.optimizer import SGD
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+
+from fiztorch.tensor import Tensor
+from fiztorch.nn.layers import Linear, ReLU, Sigmoid
+from fiztorch.nn.sequential import Sequential
 import fiztorch.nn.functional as F
+import fiztorch.optim.optimizer as opt
 
-# Define a neural network
-model = Sequential(
-    Linear(2, 3),
-    ReLU(),
-    Linear(3, 1)
-)
+def load_data():
+    X, y = load_breast_cancer(return_X_y=True)
+    X = StandardScaler().fit_transform(X)
+    return train_test_split(Tensor(X), Tensor(y), test_size=0.2, random_state=42)
 
-# Create some input data
-input = Tensor([[1.0, 2.0]], requires_grad=True)
+def create_model():
+    return Sequential(Linear(30, 64), ReLU(), Linear(64, 32), ReLU(), Linear(32, 1), Sigmoid())
 
-# Example of training a model
-def train_example():
-    optimizer = SGD(model.parameters(), lr=0.01)
-
-    # Dummy data for demonstration
-    X_train = Tensor(np.random.rand(100, 2), requires_grad=True)
-    y_train = Tensor(np.random.rand(100, 1))
-
-    for epoch in range(5):  # Simulate 5 epochs of training
+def train_epoch(model, optimizer, X_train, y_train, batch_size=32):
+    indices = np.random.permutation(len(X_train.data))
+    for i in range(0, len(X_train.data), batch_size):
+        batch = indices[i:i+batch_size]
         optimizer.zero_grad()
-        predictions = model(X_train)
-        loss = F.mse_loss(predictions, y_train)
+        loss = F.binary_cross_entropy(model(Tensor(X_train.data[batch])), Tensor(y_train.data[batch]))
         loss.backward()
         optimizer.step()
-        print(f"Epoch {epoch+1}, Loss: {loss.data}")
+
+def evaluate(model, X, y):
+    preds = model(X).data > 0.5
+    print(classification_report(y.data, preds))
+    print(confusion_matrix(y.data, preds))
+
+def main():
+    X_train, X_test, y_train, y_test = load_data()
+    model, optimizer = create_model(), opt.Adam(model.parameters(), lr=0.001)
+    for _ in range(100): train_epoch(model, optimizer, X_train, y_train)
+    evaluate(model, X_test, y_test)
 
 if __name__ == "__main__":
-    train_example()
+    main()
+
 ```
 
 ## Examples
@@ -225,4 +242,6 @@ For any questions or feedback, please open an issue or contact the maintainers.
 
 ---
 
-Made with ❤️ by [ahammadnafiz](https://github.com/ahammadnafiz)
+<div align="center">
+Made with ❤️ by <a href="https://github.com/ahammadnafiz">ahammadnafiz</a>
+</div>
