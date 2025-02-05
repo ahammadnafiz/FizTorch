@@ -1,11 +1,7 @@
 
-# FizTorch: A Toy Tensor Library for Machine Learning
-
 <div align="center">
 
 ![Logo](assets/fiztorch.png)
-
-⭐️ Star us on GitHub — it motivates us a lot! ⭐️
 
 🔥 A Minimal Deep Learning Framework 🔥
 
@@ -17,7 +13,6 @@
 📊 🔢 🧮 🤖 📈
 
 </div>
-
 
 
 FizTorch is a lightweight deep learning framework designed for educational purposes and small-scale projects. It provides a simple and intuitive API for building and training neural networks, inspired by popular frameworks like PyTorch.
