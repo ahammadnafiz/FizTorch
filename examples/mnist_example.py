@@ -1,6 +1,8 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+
+# TO Run: python -m examples.mnist_example
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +19,7 @@ from fiztorch.nn.layers import Linear, ReLU
 from fiztorch.nn.sequential import Sequential
 import fiztorch.nn.functional as F
 import fiztorch.optim.optimizer as opt
+from fiztorch.utils import visual
 
 # Original mnist digit data from openml
 # def load_mnist_data():
@@ -235,7 +238,7 @@ def main():
         train_losses = []
         train_accuracies = []
         test_accuracies = []
-
+        loss_visual = visual.LossVisualizer()
         # Training loop
         print("Training started...")
         for epoch in range(n_epochs):
@@ -243,6 +246,7 @@ def main():
             train_acc = evaluate(model, X_train, y_train)
             test_acc = evaluate(model, X_test, y_test)
 
+            loss_visual.update(avg_loss)
             train_losses.append(avg_loss)
             train_accuracies.append(train_acc)
             test_accuracies.append(test_acc)
@@ -253,6 +257,8 @@ def main():
             print(f"Test Accuracy: {test_acc:.4f}")
             print("-" * 50)
 
+        print("Training complete!")
+        loss_visual.plot(window_size=5)
         # create_training_animation(train_losses, train_accuracies, test_accuracies)
 
     except Exception as e:
