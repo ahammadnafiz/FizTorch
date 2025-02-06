@@ -121,7 +121,7 @@ class Tensor:
         if self.grad is None:
             self.grad = Tensor(gradient)
         else:
-            self.grad = Tensor(self.grad.data + gradient)  # Create new Tensor instead of modifying data
+            self.grad.data += gradient  # Modify existing Tensor data in place
 
         # Propagate gradient to inputs if there's a gradient function
         if self._grad_fn is not None:
