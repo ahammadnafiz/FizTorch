@@ -181,6 +181,28 @@ output = model(input)
 # Print the output
 print(output)
 ```
+## TODO
+
+- [x] Implement basic tensor operations
+- [x] Add support for automatic differentiation
+- [x] Create fundamental neural network layers
+- [x] Build sequential model functionality
+- [x] Implement basic optimizers
+- [x] Add MNIST digit recognition example
+- [x] Add California housing regression example
+- [ ] Add more activation functions (Leaky ReLU, ELU, SELU)
+- [ ] Implement convolutional layers
+- [ ] Add batch normalization
+- [ ] Support GPU acceleration
+- [ ] Create comprehensive documentation
+- [ ] Add unit tests
+- [ ] Implement data loading utilities
+- [ ] Add model saving/loading functionality
+- [ ] Implement dropout layers
+- [ ] Add learning rate schedulers
+- [x] Create visualization utilities
+- [ ] Support multi-GPU training
+- [ ] Add model quantization
 
 ## Roadmap
 
