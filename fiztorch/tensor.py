@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Union, Optional, List
 import numpy as np
 from fiztorch.utils.broadcast import GradientUtils as _GradientUtils
 
@@ -20,6 +20,11 @@ class Tensor:
         self.grad = None if requires_grad else None
         self._grad_fn = None
         self.is_leaf = True
+
+        # TODO: TRACK PARENT-CHILD RELATIONSHIPS FOR BACKPROPAGATION
+        self.parents: List[Tensor] = []
+        self._grad_accumulated = False
+        self.children: List[Tensor] = []
 
     @property
     def shape(self):
@@ -103,7 +108,7 @@ class Tensor:
     
     def backward(self, gradient: Optional[Union['Tensor', np.ndarray]] = None) -> None:
         """
-        Compute the gradient of the tensor.
+        Compute the gradient of the tensor using topological sort.
 
         Parameters:
         gradient (Optional[Union['Tensor', np.ndarray]]): The gradient to be propagated.
@@ -117,15 +122,25 @@ class Tensor:
         elif isinstance(gradient, Tensor):
             gradient = gradient.data
 
-        # Initialize or accumulate the gradient
-        if self.grad is None:
-            self.grad = Tensor(gradient)
-        else:
-            self.grad.data += gradient  # Modify existing Tensor data in place
+        # Build topo order
+        topo = []
+        visited = set()
 
-        # Propagate gradient to inputs if there's a gradient function
-        if self._grad_fn is not None:
-            self._grad_fn(Tensor(gradient))
+        def build_topo(tensor):
+            if tensor not in visited and tensor._grad_fn is not None:
+                visited.add(tensor)
+                # We can't directly get child tensors, so we'll rely on grad_fn
+                topo.append(tensor)
+
+        build_topo(self)
+        
+        # Initialize gradient
+        self.grad = Tensor(gradient) if self.grad is None else Tensor(self.grad.data + gradient)
+
+        # Backpropagate in reverse topological order
+        for tensor in reversed(topo):
+            if tensor._grad_fn is not None:
+                tensor._grad_fn(tensor.grad)
 
     def __add__(self, other: Union['Tensor', float]) -> 'Tensor':
         """
