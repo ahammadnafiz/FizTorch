@@ -196,13 +196,14 @@ print(output)
 - [ ] Support GPU acceleration
 - [ ] Create comprehensive documentation
 - [ ] Add unit tests
-- [ ] Implement data loading utilities
+- [x] Implement data loading utilities
 - [ ] Add model saving/loading functionality
 - [ ] Implement dropout layers
 - [ ] Add learning rate schedulers
 - [x] Create visualization utilities
 - [ ] Support multi-GPU training
 - [ ] Add model quantization
+- [ ] Add Load dataset functionality
 
 ## Roadmap
 

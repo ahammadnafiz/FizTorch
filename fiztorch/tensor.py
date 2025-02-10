@@ -17,14 +17,50 @@ class Tensor:
             self.data = np.array(data) # Convert to numpy array
 
         self.requires_grad = requires_grad
-        self.grad = None if requires_grad else None
-        self._grad_fn = None
-        self.is_leaf = True
+        self.grad = None if requires_grad else None # Gradient of the tensor with respect to some scalar value
+        self._grad_fn = None # Function to compute the gradient of the tensor
+        self.is_leaf = True # Indicates whether the tensor is a leaf node in the computational graph
 
         # TODO: TRACK PARENT-CHILD RELATIONSHIPS FOR BACKPROPAGATION
         self.parents: List[Tensor] = []
         self._grad_accumulated = False
         self.children: List[Tensor] = []
+
+    def backward(self, gradient: Optional[Union['Tensor', np.ndarray]] = None) -> None:
+        """
+        Compute the gradient of the tensor using topological sort.
+
+        Parameters:
+        gradient (Optional[Union['Tensor', np.ndarray]]): The gradient to be propagated.
+        """
+        if not self.requires_grad:
+            return
+
+        # Handle the case when gradient is None (implicit gradient of 1.0)
+        if gradient is None:
+            gradient = np.ones_like(self.data)
+        elif isinstance(gradient, Tensor):
+            gradient = gradient.data
+
+        # Build topo order
+        topo = []
+        visited = set()
+
+        def build_topo(tensor):
+            if tensor not in visited and tensor._grad_fn is not None:
+                visited.add(tensor)
+                # We can't directly get child tensors, so we'll rely on grad_fn
+                topo.append(tensor)
+
+        build_topo(self)
+        
+        # Initialize gradient
+        self.grad = Tensor(gradient) if self.grad is None else Tensor(self.grad.data + gradient)
+
+        # Backpropagate in reverse topological order
+        for tensor in reversed(topo):
+            if tensor._grad_fn is not None:
+                tensor._grad_fn(tensor.grad)
 
     @property
     def shape(self):
@@ -105,42 +141,6 @@ class Tensor:
         """Reset the gradient to zero"""
         if self.requires_grad:
             self.grad = None
-    
-    def backward(self, gradient: Optional[Union['Tensor', np.ndarray]] = None) -> None:
-        """
-        Compute the gradient of the tensor using topological sort.
-
-        Parameters:
-        gradient (Optional[Union['Tensor', np.ndarray]]): The gradient to be propagated.
-        """
-        if not self.requires_grad:
-            return
-
-        # Handle the case when gradient is None (implicit gradient of 1.0)
-        if gradient is None:
-            gradient = np.ones_like(self.data)
-        elif isinstance(gradient, Tensor):
-            gradient = gradient.data
-
-        # Build topo order
-        topo = []
-        visited = set()
-
-        def build_topo(tensor):
-            if tensor not in visited and tensor._grad_fn is not None:
-                visited.add(tensor)
-                # We can't directly get child tensors, so we'll rely on grad_fn
-                topo.append(tensor)
-
-        build_topo(self)
-        
-        # Initialize gradient
-        self.grad = Tensor(gradient) if self.grad is None else Tensor(self.grad.data + gradient)
-
-        # Backpropagate in reverse topological order
-        for tensor in reversed(topo):
-            if tensor._grad_fn is not None:
-                tensor._grad_fn(tensor.grad)
 
     def __add__(self, other: Union['Tensor', float]) -> 'Tensor':
         """
@@ -166,7 +166,7 @@ class Tensor:
                     other.backward(unbroadcast_grad)
             result._grad_fn = _backward
             result.is_leaf = False
-
+            
         return result
 
     def __mul__(self, other: Union['Tensor', float]) -> 'Tensor':
@@ -224,6 +224,74 @@ class Tensor:
             result.is_leaf = False
 
         return result
+    
+    def dot(self, other: 'Tensor') -> 'Tensor':
+        """
+        Compute the dot product of two tensors.
+
+        Parameters:
+        other (Tensor): The tensor to compute the dot product with.
+
+        Returns:
+        Tensor: The result of the dot product.
+        """
+        if not isinstance(other, Tensor):
+            raise TypeError("Dot product is only defined between tensors")
+
+        result = (self * other).sum()
+
+        if result.requires_grad:
+            def _backward(gradient):
+                if self.requires_grad:
+                    grad = gradient.data * other.data
+                    self.backward(Tensor(grad))
+                if other.requires_grad:
+                    grad = gradient.data * self.data 
+                    other.backward(Tensor(grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
+    
+    def matmul(self, other: 'Tensor') -> 'Tensor':
+        """
+        Perform matrix multiplication between two tensors.
+        Uses __matmul__ which already has backward functionality.
+
+        Parameters:
+        other (Tensor): The tensor to multiply with.
+
+        Returns:
+        Tensor: The result of the matrix multiplication.
+        """
+        # @ operator calls __matmul__ which handles gradients
+        return self @ other
+    
+    def add(self, other: Union['Tensor', float]) -> 'Tensor':
+        """
+        Add two tensors element-wise.
+        Uses __add__ which already has backward functionality.
+
+        Parameters:
+        other (Union['Tensor', float]): The tensor or scalar to add.
+
+        Returns:
+        Tensor: The result of the addition.
+        """
+        return self + other
+    
+    def mul(self, other: Union['Tensor', float]) -> 'Tensor':
+        """
+        Multiply two tensors element-wise.
+        Uses __mul__ which already has backward functionality.
+
+        Parameters:
+        other (Union['Tensor', float]): The tensor or scalar to multiply.
+
+        Returns:
+        Tensor: The result of the multiplication.
+        """
+        return self * other
 
     def __neg__(self) -> 'Tensor':
         """Return the negation of the tensor"""
@@ -420,7 +488,66 @@ class Tensor:
             if max_val is not None:
                 self.grad.data = np.minimum(self.grad.data, max_val)
 
-    #TODO: add computational graph
+    def relu(self) -> 'Tensor':
+        """
+        Compute the rectified linear unit (ReLU) of each element in the tensor.
+        
+        Returns:
+        Tensor: The result of the ReLU computation.
+        """
+        result = Tensor(np.maximum(0, self.data), requires_grad=self.requires_grad)
+        
+        if self.requires_grad:
+            def _backward(gradient):
+                grad = gradient.data * (self.data > 0)
+                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        
+        return result
+    
+    def softmax(self, axis=-1) -> 'Tensor':
+        """
+        Compute the softmax of the tensor along a specified axis.
+        
+        Parameters:
+        axis (int): The axis along which to compute the softmax
+        
+        Returns:
+        Tensor: The result of the softmax computation
+        """
+        exps = np.exp(self.data - np.max(self.data, axis=axis, keepdims=True))
+        result = Tensor(exps / np.sum(exps, axis=axis, keepdims=True), requires_grad=self.requires_grad)
+        
+        if self.requires_grad:
+            def _backward(gradient):
+                sm = result.data
+                grad = gradient.data * sm * (1 - sm)
+                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        
+        return result
+    
+    def sigmoid(self) -> 'Tensor':
+        """
+        Compute the sigmoid of each element in the tensor.
+        
+        Returns:
+        Tensor: The result of the sigmoid computation.
+        """
+        result = Tensor(1 / (1 + np.exp(-self.data)), requires_grad=self.requires_grad)
+        
+        if self.requires_grad:
+            def _backward(gradient):
+                grad = gradient.data * result.data * (1 - result.data)
+                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+        
+        return result
+
+    #TODO: add computational graph visualization
     
     def __repr__(self) -> str:
         """Return a string representation of the tensor"""
