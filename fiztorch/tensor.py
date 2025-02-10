@@ -12,9 +12,9 @@ class Tensor:
         requires_grad (bool): If True, gradients will be computed for this tensor.
         """
         if isinstance(data, np.ndarray):
-            self.data = data.astype(np.float64)  # Ensure float64 for numerical stability
+            self.data = data
         else:
-            self.data = np.array(data, dtype=np.float64)
+            self.data = np.array(data) # Convert to numpy array
 
         self.requires_grad = requires_grad
         self.grad = None if requires_grad else None
@@ -424,7 +424,9 @@ class Tensor:
     
     def __repr__(self) -> str:
         """Return a string representation of the tensor"""
-        return f"Tensor({self.data}, requires_grad={self.requires_grad})"
+        return (f"({f"Tensor({self.data}),"
+                f"  dtype={self.data.dtype}," 
+                f"  requires_grad={self.requires_grad}"})")
 
     def __str__(self) -> str:
         """Return a string representation of the tensor"""
