@@ -13,8 +13,10 @@ w = Tensor(np.random.randn(3, 4), requires_grad=True)
 # 2. Perform operations
 c = a.dot(b) + w
 d = c.relu()
-# d.backward()
+d.backward()
 
-# print(a.grad)
-print(c)
-print(d)
+print(a.grad)
+print(b.grad)
+# print(w.grad)
+# print(c)
+# print(d)

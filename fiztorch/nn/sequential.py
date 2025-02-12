@@ -164,3 +164,21 @@ class Sequential(Module):
         self.layers.clear()
         self._parameters.clear()
         self._parameter_count = 0
+
+    def __iter__(self) -> Iterator[Module]:
+        """
+        Returns an iterator over the layers in the container.
+
+        Yields:
+            Iterator[Module]: An iterator over the layers.
+        """
+        return iter(self.layers)
+
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of the Sequential container.
+
+        Returns:
+            str: String representation of the container.
+        """
+        return f"Sequential(\n  {',\n  '.join([str(layer) for layer in self.layers])}\n)"
