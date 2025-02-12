@@ -190,7 +190,7 @@ print(output)
 - [x] Implement basic optimizers
 - [x] Add MNIST digit recognition example
 - [x] Add California housing regression example
-- [ ] Add more activation functions (Leaky ReLU, ELU, SELU)
+- [X] Add more activation functions (Leaky ReLU, ELU, SELU)
 - [ ] Implement convolutional layers
 - [ ] Add batch normalization
 - [ ] Support GPU acceleration

@@ -34,6 +34,65 @@ class MSELoss(Loss):
             return (diff * diff).sum()
         else:  # 'none'
             return diff * diff
+        
+class MAELoss(Loss):
+    """Mean Absolute Error loss function."""
+    
+    def __call__(self, input: Tensor, target: Tensor,
+                 reduction: Literal['mean', 'sum', 'none'] = 'mean') -> Tensor:
+        """
+        Compute MAE loss between input and target.
+        
+        Args:
+            input: Predicted values
+            target: Target values
+            reduction: Type of reduction to apply
+            
+        Returns:
+            Loss tensor
+        """
+        diff = np.abs(input - target)
+        if reduction == 'mean':
+            return diff.sum() / diff.data.size
+        elif reduction == 'sum':
+            return diff.sum()
+        else:  # 'none'
+            return diff
+        
+class HuberLoss(Loss):
+    """Huber loss function."""
+    
+    def __init__(self, delta: float = 1.0):
+        """
+        Initialize Huber loss.
+        
+        Args:
+            delta (float): Threshold for Huber loss. Default: 1.0.
+        """
+        self.delta = delta
+        
+    def __call__(self, input: Tensor, target: Tensor,
+                 reduction: Literal['mean', 'sum', 'none'] = 'mean') -> Tensor:
+        """
+        Compute Huber loss between input and target.
+        
+        Args:
+            input: Predicted values
+            target: Target values
+            reduction: Type of reduction to apply
+            
+        Returns:
+            Loss tensor
+        """
+        diff = np.abs(input - target)
+        loss = np.where(diff <= self.delta, 0.5 * diff ** 2, self.delta * (diff - 0.5 * self.delta))
+        
+        if reduction == 'mean':
+            return loss.sum() / loss.data.size
+        elif reduction == 'sum':
+            return loss.sum()
+        else:  # 'none'
+            return loss
 
 class CrossEntropyLoss(Loss):
     """Cross Entropy loss function with integrated softmax."""
