@@ -3,6 +3,8 @@ from ..tensor import Tensor
 from .activations import (
     ReLU, 
     LeakyReLU, 
+    ELU,
+    SELU,
     Sigmoid, 
     Tanh, 
     Softmax)
@@ -19,6 +21,14 @@ def relu(input: Tensor) -> Tensor:
 def leaky_relu(input: Tensor, negative_slope: float = 0.01) -> Tensor:
     """Convenience function for LeakyReLU activation."""
     return LeakyReLU(negative_slope)(input)
+
+def elu(input: Tensor, alpha: float = 1.0) -> Tensor:
+    """Convenience function for ELU activation."""
+    return ELU(alpha)(input)
+
+def selu(input: Tensor) -> Tensor:
+    """Convenience function for SELU activation."""
+    return SELU()(input)
 
 def sigmoid(input: Tensor) -> Tensor:
     """Convenience function for Sigmoid activation."""

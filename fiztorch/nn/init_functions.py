@@ -47,3 +47,33 @@ def kaiming_uniform_(tensor: Tensor) -> Tensor:
     fan_in, _ = _calculate_fan_in_and_fan_out(tensor)
     bound = np.sqrt(6. / fan_in)
     return uniform_(tensor, -bound, bound)
+
+def kaiming_normal_(tensor: Tensor) -> Tensor:
+    """Fills the tensor with values using Kaiming normal initialization."""
+    fan_in, _ = _calculate_fan_in_and_fan_out(tensor)
+    std = np.sqrt(2. / fan_in)
+    return normal_(tensor, 0., std)
+
+def glorot_uniform_(tensor: Tensor) -> Tensor:
+    """Fills the tensor with values using Glorot uniform initialization."""
+    fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
+    bound = np.sqrt(6. / (fan_in + fan_out))
+    return uniform_(tensor, -bound, bound)
+
+def glorot_normal_(tensor: Tensor) -> Tensor:
+    """Fills the tensor with values using Glorot normal initialization."""
+    fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
+    std = np.sqrt(2. / (fan_in + fan_out))
+    return normal_(tensor, 0., std)
+
+def he_uniform_(tensor: Tensor) -> Tensor:
+    """Fills the tensor with values using He uniform initialization."""
+    fan_in, _ = _calculate_fan_in_and_fan_out(tensor)
+    bound = np.sqrt(6. / fan_in)
+    return uniform_(tensor, -bound, bound)
+
+def he_normal_(tensor: Tensor) -> Tensor:
+    """Fills the tensor with values using He normal initialization."""
+    fan_in, _ = _calculate_fan_in_and_fan_out(tensor)
+    std = np.sqrt(2. / fan_in)
+    return normal_(tensor, 0., std)

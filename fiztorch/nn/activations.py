@@ -54,6 +54,61 @@ class LeakyReLU(Activation):
 
         return result
 
+class ELU(Activation):
+    """
+    Exponential Linear Unit activation function: ELU(x) = x if x > 0 else alpha * (exp(x) - 1)
+    """
+    def __init__(self, alpha: float = 1.0):
+        """
+        Initialize ELU.
+
+        Args:
+            alpha (float): Alpha value for negative inputs. Default: 1.0.
+        """
+        self.alpha = alpha
+
+    def __call__(self, input: Tensor) -> Tensor:
+        output_data = np.where(input.data > 0, input.data, self.alpha * (np.exp(input.data) - 1))
+        result = Tensor(output_data, requires_grad=input.requires_grad)
+
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = np.where(input.data > 0, gradient.data, self.alpha * np.exp(input.data) * gradient.data)
+                input.backward(Tensor(grad))
+            
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
+    
+class SELU(Activation):
+    """
+    Scaled Exponential Linear Unit activation function: SELU(x) = scale * (x if x > 0 else alpha * (exp(x) - 1))
+    """
+    def __init__(self, alpha: float = 1.6732632423543772848170429916717, scale: float = 1.0507009873554804934193349852946):
+        """
+        Initialize SELU.
+
+        Args:
+            alpha (float): Alpha value for negative inputs. Default: 1.6732632423543772848170429916717.
+            scale (float): Scale value for the output. Default: 1.0507009873554804934193349852946.
+        """
+        self.alpha = alpha
+        self.scale = scale
+
+    def __call__(self, input: Tensor) -> Tensor:
+        output_data = self.scale * np.where(input.data > 0, input.data, self.alpha * (np.exp(input.data) - 1))
+        result = Tensor(output_data, requires_grad=input.requires_grad)
+
+        if input.requires_grad:
+            def _backward(gradient: Tensor) -> None:
+                grad = self.scale * np.where(input.data > 0, gradient.data, self.alpha * np.exp(input.data) * gradient.data)
+                input.backward(Tensor(grad))
+            
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
 
 class Sigmoid(Activation):
     """Sigmoid activation function."""

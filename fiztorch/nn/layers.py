@@ -6,6 +6,8 @@ from .init_functions import xavier_uniform_, kaiming_uniform_, zeros_
 from .activations import (
     ReLU as ReLUActivation,
     LeakyReLU as LeakyReLUActivation,
+    ELU as ELUActivation,
+    SELU as SELUActivation,
     Sigmoid as SigmoidActivation,
     Softmax as SoftmaxActivation,
     Tanh as TanhActivation
@@ -225,6 +227,46 @@ class BatchNorm2d(Module):
         """
         # TODO: Implement batch normalization
         raise NotImplementedError("BatchNorm2d forward pass not implemented yet")
+    
+class LayerNorm(Module):
+    """Layer Normalization layer.
+    
+    Args:
+        normalized_shape: Shape of the input tensor over which to normalize
+        eps: Small constant for numerical stability. Default: 1e-5
+        elementwise_affine: If True, has learnable affine parameters. Default: True
+    """
+    
+    def __init__(
+        self,
+        normalized_shape: Tuple[int],
+        eps: float = 1e-5,
+        elementwise_affine: bool = True
+    ) -> None:
+        super().__init__()
+        self.normalized_shape = normalized_shape
+        self.eps = eps
+        self.elementwise_affine = elementwise_affine
+        
+        if self.elementwise_affine:
+            self.weight = Tensor(np.ones(normalized_shape), requires_grad=True)
+            self.bias = Tensor(np.zeros(normalized_shape), requires_grad=True)
+            self._parameters['weight'] = self.weight
+            self._parameters['bias'] = self.bias
+            
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass of the layer normalization layer.
+        
+        Args:
+            x: Input tensor of shape (*, normalized_shape)
+            
+        Returns:
+            Normalized tensor of the same shape
+        """
+
+        # TODO: Implement layer normalization
+        pass
 
 
 # Activation layers that use the implementations from activations.py
@@ -257,7 +299,30 @@ class LeakyReLU(Module):
     
     def extra_repr(self) -> str:
         return f'negative_slope={self.negative_slope}, inplace={self.inplace}'
-
+    
+class ELU(Module):
+    """ELU activation layer."""
+    
+    def __init__(self, alpha: float = 1.0) -> None:
+        super().__init__()
+        self.activation = ELUActivation(alpha)
+        self.alpha = alpha
+        
+    def forward(self, x: Tensor) -> Tensor:
+        return self.activation(x)
+    
+    def extra_repr(self) -> str:
+        return f'alpha={self.alpha}'
+    
+class SELU(Module):
+    """SELU activation layer."""
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.activation = SELUActivation()
+        
+    def forward(self, x: Tensor) -> Tensor:
+        return self.activation(x)
 
 class Sigmoid(Module):
     """Sigmoid activation layer."""

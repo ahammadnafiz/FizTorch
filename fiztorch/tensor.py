@@ -38,24 +38,33 @@ class Tensor:
 
         # Handle the case when gradient is None (implicit gradient of 1.0)
         if gradient is None:
-            gradient = np.ones_like(self.data)
+            if not hasattr(self, '_ones_cache'):
+                self._ones_cache = np.ones_like(self.data)
+            gradient = self._ones_cache
         elif isinstance(gradient, Tensor):
             gradient = gradient.data
 
-        # Build topo order
+        # Pre-allocate list size for better memory efficiency
         topo = []
-        visited = set()
+        topo.append(self)
+        visited = {self}
 
-        def build_topo(tensor):
-            if tensor not in visited and tensor._grad_fn is not None:
-                visited.add(tensor)
-                # We can't directly get child tensors, so we'll rely on grad_fn
-                topo.append(tensor)
+        # Build topo order iteratively instead of recursively
+        idx = 0
+        while idx < len(topo):
+            current = topo[idx]
+            if current._grad_fn is not None:
+                for parent in current.parents:
+                    if parent not in visited and parent._grad_fn is not None:
+                        visited.add(parent)
+                        topo.append(parent)
+            idx += 1
 
-        build_topo(self)
-        
-        # Initialize gradient
-        self.grad = Tensor(gradient) if self.grad is None else Tensor(self.grad.data + gradient)
+        # Initialize gradient using in-place operations
+        if self.grad is None:
+            self.grad = Tensor(gradient)
+        else:
+            self.grad.data += gradient
 
         # Backpropagate in reverse topological order
         for tensor in reversed(topo):
@@ -468,6 +477,24 @@ class Tensor:
         if self.requires_grad:
             def _backward(gradient):
                 grad = gradient.data * np.cos(self.data)
+                self.backward(Tensor(grad, requires_grad=self.requires_grad))
+            result._grad_fn = _backward
+            result.is_leaf = False
+
+        return result
+    
+    def cos(self) -> 'Tensor':
+        """
+        Compute the cosine of each element in the tensor.
+
+        Returns:
+        Tensor: The result of the cosine computation.
+        """
+        result = Tensor(np.cos(self.data), requires_grad=self.requires_grad)
+
+        if self.requires_grad:
+            def _backward(gradient):
+                grad = gradient.data * -np.sin(self.data)
                 self.backward(Tensor(grad, requires_grad=self.requires_grad))
             result._grad_fn = _backward
             result.is_leaf = False
