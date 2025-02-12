@@ -1,4 +1,4 @@
-from typing import List, Iterator, Optional
+from typing import List, Iterator
 from .module import Module
 from ..tensor import Tensor
 
