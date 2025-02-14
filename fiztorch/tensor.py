@@ -575,6 +575,8 @@ class Tensor:
         return result
 
     #TODO: add computational graph visualization
+    def visualize(self):
+        pass
     
     def __repr__(self) -> str:
         """Return a string representation of the tensor"""
