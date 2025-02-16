@@ -1,4 +1,5 @@
 import numpy as np
+from tensorflow.keras.datasets import mnist
 
 def im2col(X, kernel_size, stride, pad):
     N, H, W, C = X.shape
@@ -235,3 +236,66 @@ class CNN:
             if isinstance(layer, (Conv2D, Dense)):
                 layer.W -= lr * layer.dW
                 layer.b -= lr * layer.db
+
+# MNIST images are 28x28 grayscale images.
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize pixel values to [0, 1] and expand dimensions to (N, H, W, 1)
+x_train = x_train.astype(np.float32) / 255.0
+x_train = np.expand_dims(x_train, -1)
+x_test = x_test.astype(np.float32) / 255.0
+x_test = np.expand_dims(x_test, -1)
+
+# For simplicity, use a smaller subset for faster testing (optional)
+x_train, y_train = x_train[:1000], y_train[:1000]
+x_test, y_test = x_test[:200], y_test[:200]
+
+
+# === Create an Instance of the CNN ===
+cnn = CNN()
+
+# === Define a Simple Training Loop ===
+epochs = 100       # Number of epochs (adjust as needed)
+batch_size = 32  # Batch size
+lr = 0.001       # Learning rate
+
+def train(model, x_train, y_train, epochs, batch_size, lr):
+    num_train = x_train.shape[0]
+    for epoch in range(epochs):
+        # Shuffle training data at the beginning of each epoch
+        permutation = np.random.permutation(num_train)
+        x_train = x_train[permutation]
+        y_train = y_train[permutation]
+        
+        epoch_loss = 0.0
+        num_batches = num_train // batch_size
+        for i in range(0, num_train, batch_size):
+            x_batch = x_train[i:i+batch_size]
+            y_batch = y_train[i:i+batch_size]
+            
+            # Forward pass and compute loss
+            loss = model.compute_loss(x_batch, y_batch)
+            epoch_loss += loss * x_batch.shape[0]  # scale by number of examples in the batch
+            
+            # Backward pass: compute gradients starting from the loss
+            model.backward_loss()
+            
+            # Update parameters using gradient descent
+            model.update_params(lr)
+        
+        avg_loss = epoch_loss / num_train
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+
+def evaluate(model, x, y):
+    # Forward pass
+    logits = model.forward(x)
+    predictions = np.argmax(logits, axis=1)
+    accuracy = np.mean(predictions == y)
+    print(f"Test Accuracy: {accuracy*100:.2f}%")
+    return accuracy
+
+# === Train the Model ===
+train(cnn, x_train, y_train, epochs, batch_size, lr)
+
+# === Evaluate on Test Data ===
+evaluate(cnn, x_test, y_test)
