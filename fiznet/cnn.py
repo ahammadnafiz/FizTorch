@@ -1,32 +1,41 @@
 import numpy as np
 from tensorflow.keras.datasets import mnist
 
+
 def im2col(X, kernel_size, stride, pad):
     N, H, W, C = X.shape
     K = kernel_size
     S = stride
     P = pad
 
-    H_out = (H + 2*P - K) // S + 1
-    W_out = (W + 2*P - K) // S + 1
+    H_out = (H + 2 * P - K) // S + 1
+    W_out = (W + 2 * P - K) // S + 1
 
-    X_pad = np.pad(X, ((0,0), (P,P), (P,P), (0,0)), mode='constant')
-    strides = (X_pad.strides[0], S*X_pad.strides[1], S*X_pad.strides[2], X_pad.strides[1], X_pad.strides[2], X_pad.strides[3])
+    X_pad = np.pad(X, ((0, 0), (P, P), (P, P), (0, 0)), mode="constant")
+    strides = (
+        X_pad.strides[0],
+        S * X_pad.strides[1],
+        S * X_pad.strides[2],
+        X_pad.strides[1],
+        X_pad.strides[2],
+        X_pad.strides[3],
+    )
     shape = (N, H_out, W_out, K, K, C)
     windows = np.lib.stride_tricks.as_strided(X_pad, shape=shape, strides=strides)
     cols = windows.transpose(0, 1, 2, 4, 5, 3).reshape(N * H_out * W_out, -1).T
     return cols
+
 
 def col2im(cols, X_shape, kernel_size, stride, pad):
     N, H, W, C = X_shape
     K = kernel_size
     S = stride
     P = pad
-    H_out = (H + 2*P - K) // S + 1
-    W_out = (W + 2*P - K) // S + 1
+    H_out = (H + 2 * P - K) // S + 1
+    W_out = (W + 2 * P - K) // S + 1
 
     cols_reshaped = cols.T.reshape(N, H_out, W_out, K, K, C)
-    X_pad = np.zeros((N, H + 2*P, W + 2*P, C))
+    X_pad = np.zeros((N, H + 2 * P, W + 2 * P, C))
 
     for i in range(H_out):
         for j in range(W_out):
@@ -42,9 +51,12 @@ def col2im(cols, X_shape, kernel_size, stride, pad):
         X_grad = X_pad
     return X_grad
 
+
 class Conv2D:
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, pad=0):
-        self.W = np.random.randn(out_channels, kernel_size, kernel_size, in_channels) * 0.1
+        self.W = (
+            np.random.randn(out_channels, kernel_size, kernel_size, in_channels) * 0.1
+        )
         self.b = np.zeros(out_channels)
         self.stride = stride
         self.pad = pad
@@ -56,8 +68,8 @@ class Conv2D:
         K = self.kernel_size
         S = self.stride
         P = self.pad
-        H_out = (H + 2*P - K) // S + 1
-        W_out = (W + 2*P - K) // S + 1
+        H_out = (H + 2 * P - K) // S + 1
+        W_out = (W + 2 * P - K) // S + 1
 
         X_col = im2col(X, K, S, P)
         W_row = self.W.reshape(self.W.shape[0], -1)
@@ -83,6 +95,7 @@ class Conv2D:
         dX = col2im(dX_col, X.shape, K, S, P)
         return dX
 
+
 class ReLU:
     def __init__(self):
         self.cache = None
@@ -94,6 +107,7 @@ class ReLU:
     def backward(self, dout):
         X = self.cache
         return dout * (X > 0)
+
 
 class MaxPool2D:
     def __init__(self, pool_size=2, stride=2):
@@ -109,11 +123,18 @@ class MaxPool2D:
         W_out = (W - K) // S + 1
 
         windows = np.lib.stride_tricks.as_strided(
-            X, 
+            X,
             shape=(N, H_out, W_out, K, K, C),
-            strides=(X.strides[0], S*X.strides[1], S*X.strides[2], X.strides[1], X.strides[2], X.strides[3])
+            strides=(
+                X.strides[0],
+                S * X.strides[1],
+                S * X.strides[2],
+                X.strides[1],
+                X.strides[2],
+                X.strides[3],
+            ),
         )
-        windows_reshaped = windows.reshape(-1, K*K)
+        windows_reshaped = windows.reshape(-1, K * K)
         max_values = np.max(windows_reshaped, axis=1)
         max_indices = np.argmax(windows_reshaped, axis=1)
         output = max_values.reshape(N, H_out, W_out, C)
@@ -148,6 +169,7 @@ class MaxPool2D:
         np.add.at(dX, (n, y, x, c), dY_flat)
         return dX
 
+
 class Flatten:
     def __init__(self):
         self.cache = None
@@ -158,6 +180,7 @@ class Flatten:
 
     def backward(self, dout):
         return dout.reshape(self.cache)
+
 
 class Dense:
     def __init__(self, in_features, out_features):
@@ -177,6 +200,7 @@ class Dense:
         self.db = np.sum(dout, axis=0)
         return dout @ self.W.T
 
+
 class SoftmaxCrossEntropy:
     def __init__(self):
         self.cache = None
@@ -195,6 +219,7 @@ class SoftmaxCrossEntropy:
         dX[np.arange(N), y] -= 1
         return dX / N
 
+
 class CNN:
     def __init__(self):
         self.layers = [
@@ -205,11 +230,11 @@ class CNN:
             ReLU(),
             MaxPool2D(2, 2),
             Flatten(),
-            Dense(16*4*4, 120),
+            Dense(16 * 4 * 4, 120),
             ReLU(),
             Dense(120, 84),
             ReLU(),
-            Dense(84, 10)
+            Dense(84, 10),
         ]
         self.loss = SoftmaxCrossEntropy()
 
@@ -237,6 +262,7 @@ class CNN:
                 layer.W -= lr * layer.dW
                 layer.b -= lr * layer.db
 
+
 # MNIST images are 28x28 grayscale images.
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -255,9 +281,10 @@ x_test, y_test = x_test[:200], y_test[:200]
 cnn = CNN()
 
 # === Define a Simple Training Loop ===
-epochs = 100       # Number of epochs (adjust as needed)
+epochs = 100  # Number of epochs (adjust as needed)
 batch_size = 32  # Batch size
-lr = 0.001       # Learning rate
+lr = 0.001  # Learning rate
+
 
 def train(model, x_train, y_train, epochs, batch_size, lr):
     num_train = x_train.shape[0]
@@ -266,25 +293,28 @@ def train(model, x_train, y_train, epochs, batch_size, lr):
         permutation = np.random.permutation(num_train)
         x_train = x_train[permutation]
         y_train = y_train[permutation]
-        
+
         epoch_loss = 0.0
         num_batches = num_train // batch_size
         for i in range(0, num_train, batch_size):
-            x_batch = x_train[i:i+batch_size]
-            y_batch = y_train[i:i+batch_size]
-            
+            x_batch = x_train[i : i + batch_size]
+            y_batch = y_train[i : i + batch_size]
+
             # Forward pass and compute loss
             loss = model.compute_loss(x_batch, y_batch)
-            epoch_loss += loss * x_batch.shape[0]  # scale by number of examples in the batch
-            
+            epoch_loss += (
+                loss * x_batch.shape[0]
+            )  # scale by number of examples in the batch
+
             # Backward pass: compute gradients starting from the loss
             model.backward_loss()
-            
+
             # Update parameters using gradient descent
             model.update_params(lr)
-        
+
         avg_loss = epoch_loss / num_train
         print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+
 
 def evaluate(model, x, y):
     # Forward pass
@@ -293,6 +323,7 @@ def evaluate(model, x, y):
     accuracy = np.mean(predictions == y)
     print(f"Test Accuracy: {accuracy*100:.2f}%")
     return accuracy
+
 
 # === Train the Model ===
 train(cnn, x_train, y_train, epochs, batch_size, lr)
