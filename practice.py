@@ -7,6 +7,8 @@ import numpy as np
 
 from fiztorch.tensor import Tensor
 
-a = Tensor([1, 2, 3])
+a = Tensor([[1, 2, 3]])
+b = Tensor([np.arange(3)])
 
-print(a)
+c = a.dot(b)
+print(c)
