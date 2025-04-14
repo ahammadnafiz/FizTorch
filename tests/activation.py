@@ -1,11 +1,15 @@
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+import sys
 
-import numpy as np
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+)
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+from fiztorch.nn.functional import cross_entropy, relu, sigmoid, softmax, tanh
 from fiztorch.tensor import Tensor
-from fiztorch.nn.functional import sigmoid, tanh, relu, softmax, cross_entropy
 
 # Create a large range Tensor
 x_data = np.linspace(-10, 10, 1000)
@@ -24,14 +28,14 @@ for activation in activations:
         result = sigmoid(x)
     elif activation == "Tanh":
         result = tanh(x)
-    
+
     # Backward with dummy gradient
     result.backward(Tensor(np.ones_like(result.data)))
-    
+
     # Collect data
     outputs.append(result.data)
     grads.append(x.grad.data.copy())
-    
+
     # Reset gradients for next activation
     x.zero_grad()
 
@@ -44,7 +48,7 @@ for i, activation in enumerate(activations):
     axs[i, 0].plot(x.data, outputs[i], label=f"{activation} Output")
     axs[i, 0].set_title(f"{activation} Activation")
     axs[i, 0].legend()
-    
+
     # Plot Activation Gradient
     axs[i, 1].plot(x.data, grads[i], label=f"{activation} Gradient", color="orange")
     axs[i, 1].set_title(f"{activation} Gradient")

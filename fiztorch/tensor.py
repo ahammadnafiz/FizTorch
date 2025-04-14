@@ -1,9 +1,6 @@
 from typing import List, Optional, Union
-
 import numpy as np
-
 from fiztorch.utils.broadcast import GradientUtils as _GradientUtils
-
 
 class Tensor:
     def __init__(
