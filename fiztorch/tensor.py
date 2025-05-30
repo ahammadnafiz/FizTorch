@@ -649,9 +649,7 @@ class Tensor:
 
     def __repr__(self) -> str:
         """Return a string representation of the tensor"""
-        return f"({f"Tensor([{self.data}]),"
-                f"  dtype={self.data.dtype}," 
-                f"  requires_grad={self.requires_grad}"})"
+        return f"Tensor([{self.data}]), dtype={self.data.dtype}, requires_grad={self.requires_grad}"
 
     def __str__(self) -> str:
         """Return a string representation of the tensor"""

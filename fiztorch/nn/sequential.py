@@ -181,4 +181,5 @@ class Sequential(Module):
         Returns:
             str: String representation of the container.
         """
-        return f"Sequential(\n  {',\n  '.join([str(layer) for layer in self.layers])}\n)"
+        layer_strs = [str(layer) for layer in self.layers]
+        return f"Sequential(\n  {',\n  '.join(layer_strs)}\n)"
